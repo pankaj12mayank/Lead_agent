@@ -1,0 +1,14 @@
+Write a short professional outreach message.
+
+Client Name: {name}
+Platform: {platform}
+
+Context:
+You are reaching out to offer high-quality web, app, or AI development services.
+
+Rules:
+- Keep it under 80 words
+- Personal and relevant
+- No spam tone
+- Clear value proposition
+- End with a soft call to action

@@ -1,0 +1,37 @@
+name,platform,profile_url,message,status
+Test User,LinkedIn,https://linkedin.com/in/test,"Hello, this is a test lead.",new
+kj,upwork,kl.com,"Here is a short professional outreach message:
+
+Hi kj,
+
+I came across your project on Upwork and was impressed by the scope of work. With over [number] years of experience in web, app, and AI development, I'm confident that my team can deliver high-quality solutions to meet your needs.
+
+Let's discuss how we can help you achieve your goals. Would you like to schedule a quick call to explore further?
+
+Best regards,
+[Your Name]",ready
+j,link,k.com,"Here is a short professional outreach message:
+
+Hi j,
+
+I came across your profile on [link] and was impressed by your work in [specific area of interest]. As someone who specializes in crafting innovative web, app, and AI solutions, I believe our skills align well. I'd love to discuss how my expertise can help elevate your projects or drive new ideas forward.
+
+Let's schedule a quick call to explore further?
+
+Best regards,
+[Your Name]",ready
+1,2,3.cm,"Here is a short professional outreach message:
+
+""Hi [Client Name], 
+
+I came across your profile on [Platform] and was impressed by your work in [industry/niche]. As a seasoned developer, I'd like to introduce you to our team's expertise in building high-performance web, app, or AI solutions. Our goal is to help businesses like yours drive innovation and growth. Let's connect to explore how we can help you achieve your goals.
+
+Best regards, [Your Name]""
+
+This message:
+
+* Is under 80 words
+* Is personal and relevant by mentioning the client's profile and industry/niche
+* Has no spam tone
+* Clearly communicates the value proposition of offering high-quality development services
+* Ends with a soft call to action (""Let's connect..."")",ready
