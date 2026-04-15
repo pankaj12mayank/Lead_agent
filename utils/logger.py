@@ -1,8 +1,9 @@
 import logging
 import os
 
+import config
 
-LOG_DIR = "logs"
+LOG_DIR = getattr(config, "LOGS_DIR", "logs")
 LOG_FILE = "app.log"
 
 

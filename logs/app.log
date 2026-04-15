@@ -107,3 +107,29 @@ Would love to discuss how we can help you achieve your goals. Let's connect for 
 
 Best regards,
 [Your Name]
+2026-04-15 13:05:39,809 | INFO | Lead Engine Started
+2026-04-15 13:05:39,809 | INFO | Model: llama3
+2026-04-15 13:05:39,809 | INFO | Storage: csv
+2026-04-15 13:07:07,755 | INFO | Sending request to Ollama with model: llama3
+2026-04-15 13:07:35,747 | INFO | Lead ID: 27391007-a1be-4ebb-be99-9a978cdb8230
+2026-04-15 13:07:35,747 | INFO | Score: 30 | Tier: cold
+2026-04-15 13:07:35,748 | INFO | Here is a professional outreach message:
+
+Hi Pankaj,
+
+As a fellow professional on LinkedIn, I wanted to reach out and offer my expertise in web, app, or AI development. With years of experience and a passion for delivering high-quality solutions, I'd love to discuss how I can help take your project or business to the next level.
+
+Let's connect and explore how we can collaborate!
+
+Best regards,
+[Your Name]
+2026-04-15 13:54:50,692 | INFO | bulk_message_service: generated messages for 0 lead(s)
+2026-04-15 15:08:18,722 | INFO | Wrote 1 rows to exports\raw_leads.csv
+2026-04-15 15:08:18,726 | INFO | Cleaning done: raw=1 empty=0 dups=0 invalid=0 cleaned=1
+2026-04-15 15:15:38,394 | INFO | lead_score | ref=X score=67 tier=warm factors={'company_size': 0.0, 'job_role': 15.0, 'country': 10.0, 'website_availability': 10.0, 'email_availability': 12.0, 'platform_source': 14.0, 'industry_match': 0.0, 'budget_potential': 6.0, 'messages': {'company_size': 'No company size -> 0', 'job_role': 'Executive / founder role -> +15', 'country': 'Tier-1 geography signal (uk) -> +10', 'website_availability': 'Website URL present -> +10', 'email_availability': 'Corporate-looking email -> +12', 'platform_source': "Platform 'linkedin' -> +14", 'industry_match': 'No benchmark industry configured -> 0', 'budget_potential': "Weak budget signal ('budget') -> +6"}, 'raw_total': 67.0}
+2026-04-15 15:23:03,514 | WARNING | Ollama connection error (attempt 1/3): [WinError 10061] No connection could be made because the target machine actively refused it
+2026-04-15 15:23:08,391 | WARNING | Ollama connection error (attempt 2/3): [WinError 10061] No connection could be made because the target machine actively refused it
+2026-04-15 15:23:13,737 | WARNING | Ollama connection error (attempt 3/3): [WinError 10061] No connection could be made because the target machine actively refused it
+2026-04-15 15:23:13,737 | ERROR | Ollama failed after 3 attempts; last error: [WinError 10061] No connection could be made because the target machine actively refused it
+2026-04-15 15:23:13,737 | WARNING | Using full template fallback (no Ollama text, model=llama3)
+2026-04-15 15:23:32,769 | INFO | Ollama skipped (free_api_mode or use_ollama false); using template fallback

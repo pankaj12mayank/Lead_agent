@@ -1,6 +1,6 @@
-name,platform,profile_url,message,status
-Test User,LinkedIn,https://linkedin.com/in/test,"Hello, this is a test lead.",new
-kj,upwork,kl.com,"Here is a short professional outreach message:
+lead_id,name,email,phone,company,platform,profile_url,location,notes,subject,message,score,tier,status,created_at,updated_at
+ac119d96-f352-4f18-bd32-4a563eb395b7,Test User,,,,LinkedIn,https://linkedin.com/in/test,,,,"Hello, this is a test lead.",0.0,,new,2026-04-15T07:37:35+00:00,2026-04-15T07:37:35+00:00
+724b8b2b-53a9-4032-8412-74cb7df6a657,kj,,,,upwork,kl.com,,,,"Here is a short professional outreach message:
 
 Hi kj,
 
@@ -9,8 +9,8 @@ I came across your project on Upwork and was impressed by the scope of work. Wit
 Let's discuss how we can help you achieve your goals. Would you like to schedule a quick call to explore further?
 
 Best regards,
-[Your Name]",ready
-j,link,k.com,"Here is a short professional outreach message:
+[Your Name]",0.0,,ready,2026-04-15T07:37:35+00:00,2026-04-15T07:37:35+00:00
+951204df-b421-46eb-b16c-d473b034dba1,j,,,,link,k.com,,,,"Here is a short professional outreach message:
 
 Hi j,
 
@@ -19,8 +19,8 @@ I came across your profile on [link] and was impressed by your work in [specific
 Let's schedule a quick call to explore further?
 
 Best regards,
-[Your Name]",ready
-1,2,3.cm,"Here is a short professional outreach message:
+[Your Name]",0.0,,ready,2026-04-15T07:37:35+00:00,2026-04-15T07:37:35+00:00
+6c8f2f78-1371-41a0-873a-01063b7ef880,1,,,,2,3.cm,,,,"Here is a short professional outreach message:
 
 ""Hi [Client Name], 
 
@@ -34,4 +34,14 @@ This message:
 * Is personal and relevant by mentioning the client's profile and industry/niche
 * Has no spam tone
 * Clearly communicates the value proposition of offering high-quality development services
-* Ends with a soft call to action (""Let's connect..."")",ready
+* Ends with a soft call to action (""Let's connect..."")",0.0,,ready,2026-04-15T07:37:35+00:00,2026-04-15T07:37:35+00:00
+27391007-a1be-4ebb-be99-9a978cdb8230,pankaj,daa,daasd,dasdas,linkedin,pad,dasasd,dasd,,"Here is a professional outreach message:
+
+Hi Pankaj,
+
+As a fellow professional on LinkedIn, I wanted to reach out and offer my expertise in web, app, or AI development. With years of experience and a passion for delivering high-quality solutions, I'd love to discuss how I can help take your project or business to the next level.
+
+Let's connect and explore how we can collaborate!
+
+Best regards,
+[Your Name]",30.0,cold,ready,2026-04-15T07:36:07+00:00,2026-04-15T07:37:35+00:00

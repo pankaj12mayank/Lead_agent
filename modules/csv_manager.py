@@ -1,64 +1,30 @@
-import os
-import pandas as pd
-import config
+"""
+Legacy CSV entry points. Delegates to the storage factory so STORAGE_MODE
+(csv | sqlite | postgres) is respected without breaking older imports.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+from settings.lead_schema import LEAD_COLUMNS
+from storage.storage_factory import get_storage
+
+# Backward-compatible name for older code / docs
+COLUMNS = LEAD_COLUMNS
 
 
-COLUMNS = ["name", "platform", "profile_url", "message", "status"]
+def init_csv() -> None:
+    get_storage().init_storage()
 
 
-def init_csv():
-    try:
-        if not os.path.exists(config.CSV_FILE_PATH):
-            os.makedirs(os.path.dirname(config.CSV_FILE_PATH), exist_ok=True)
-            df = pd.DataFrame(columns=COLUMNS)
-            df.to_csv(config.CSV_FILE_PATH, index=False)
-    except Exception:
-        pass
+def save_lead(lead_dict: Dict[str, Any]) -> None:
+    get_storage().create_lead(lead_dict)
 
 
-def save_lead(lead_dict):
-    try:
-        if not os.path.exists(config.CSV_FILE_PATH):
-            init_csv()
-
-        df = pd.DataFrame([lead_dict])
-        df.to_csv(
-            config.CSV_FILE_PATH,
-            mode="a",
-            header=not os.path.exists(config.CSV_FILE_PATH) or os.stat(config.CSV_FILE_PATH).st_size == 0,
-            index=False
-        )
-    except Exception:
-        pass
+def read_leads() -> List[Dict[str, Any]]:
+    return get_storage().list_leads()
 
 
-def read_leads():
-    try:
-        if not os.path.exists(config.CSV_FILE_PATH):
-            return []
-
-        df = pd.read_csv(config.CSV_FILE_PATH)
-        return df.to_dict(orient="records")
-    except Exception:
-        return []
-
-
-def update_leads(leads_list):
-    try:
-        os.makedirs(os.path.dirname(config.CSV_FILE_PATH), exist_ok=True)
-
-        df = pd.DataFrame(leads_list)
-
-        for col in COLUMNS:
-            if col not in df.columns:
-                df[col] = ""
-
-        df = df[COLUMNS]
-
-        temp_path = config.CSV_FILE_PATH + ".tmp"
-        df.to_csv(temp_path, index=False)
-
-        os.replace(temp_path, config.CSV_FILE_PATH)
-
-    except Exception:
-        pass
+def update_leads(leads_list: List[Dict[str, Any]]) -> None:
+    get_storage().sync_leads(leads_list)

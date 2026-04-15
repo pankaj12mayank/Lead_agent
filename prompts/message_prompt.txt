@@ -2,6 +2,7 @@ Write a short professional outreach message.
 
 Client Name: {name}
 Platform: {platform}
+Email subject (for context): {subject}
 
 Context:
 You are reaching out to offer high-quality web, app, or AI development services.

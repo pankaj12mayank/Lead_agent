@@ -1,0 +1,11 @@
+Write one short email subject line (max 12 words, no quotes, no ALL CAPS spam).
+
+Recipient name: {name}
+Platform: {platform}
+Company: {company}
+Notes context: {notes}
+
+Rules:
+- Professional and specific
+- No misleading clickbait
+- Single line only

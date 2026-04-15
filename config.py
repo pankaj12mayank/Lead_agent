@@ -1,7 +1,70 @@
-CSV_FILE_PATH = "data/leads.csv"
+import os
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "llama3"
+from dotenv import load_dotenv
 
-USE_OLLAMA = True
-FREE_API_MODE = False
+load_dotenv()
+
+DEBUG = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").strip() or "INFO"
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").strip() or "*"
+
+CSV_FILE_PATH = os.getenv("CSV_FILE_PATH", "data/leads.csv")
+SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", "database/leads.db")
+POSTGRES_DSN = os.getenv("POSTGRES_DSN", "")
+STORAGE_MODE = os.getenv("STORAGE_MODE", "csv").lower().strip()
+
+PROMPTS_DIR = os.getenv("PROMPTS_DIR", "prompts")
+
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+MODEL_NAME = os.getenv("MODEL_NAME", "llama3")
+
+# Ollama message generator (Llama3 / Mistral / DeepSeek tags — match your ``ollama list``)
+OLLAMA_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "120"))
+OLLAMA_MAX_RETRIES = int(os.getenv("OLLAMA_MAX_RETRIES", "3"))
+OLLAMA_MODEL_LLAMA3 = os.getenv("OLLAMA_MODEL_LLAMA3", "llama3").strip() or "llama3"
+OLLAMA_MODEL_MISTRAL = os.getenv("OLLAMA_MODEL_MISTRAL", "mistral").strip() or "mistral"
+OLLAMA_MODEL_DEEPSEEK = os.getenv("OLLAMA_MODEL_DEEPSEEK", "deepseek-r1").strip() or "deepseek-r1"
+
+USE_OLLAMA = os.getenv("USE_OLLAMA", "true").lower() in ("1", "true", "yes")
+FREE_API_MODE = os.getenv("FREE_API_MODE", "false").lower() in ("1", "true", "yes")
+
+API_KEYS = [k.strip() for k in os.getenv("API_KEYS", "").split(",") if k.strip()]
+
+# JWT (API). Change SECRET_KEY in production.
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))  # default 7 days
+
+API_META_DB_PATH = os.getenv("API_META_DB_PATH", "database/api_meta.db")
+
+# Monorepo paths (CSV exports, Playwright session state, app logs)
+EXPORTS_DIR = os.getenv("EXPORTS_DIR", "exports").strip() or "exports"
+SESSIONS_DIR = os.getenv("SESSIONS_DIR", "sessions").strip() or "sessions"
+LOGS_DIR = os.getenv("LOGS_DIR", "logs").strip() or "logs"
+
+
+def ensure_data_dirs() -> None:
+    for d in (EXPORTS_DIR, SESSIONS_DIR, LOGS_DIR):
+        os.makedirs(d, exist_ok=True)
+
+
+# --- Scraper (Playwright): safe delays & per-run lead caps ---
+SCRAPER_DELAY_MIN_SECONDS = float(os.getenv("SCRAPER_DELAY_MIN_SECONDS", "3"))
+SCRAPER_DELAY_MAX_SECONDS = float(os.getenv("SCRAPER_DELAY_MAX_SECONDS", "5"))
+SCRAPER_MAX_LEADS_DEFAULT = int(os.getenv("SCRAPER_MAX_LEADS_DEFAULT", "20"))
+SCRAPER_MAX_LEADS_HARD_CAP = int(os.getenv("SCRAPER_MAX_LEADS_HARD_CAP", "50"))
+SCRAPER_MANUAL_LOGIN_DEFAULT_SECONDS = int(os.getenv("SCRAPER_MANUAL_LOGIN_DEFAULT_SECONDS", "180"))
+
+# --- Lead scoring (industry alignment bonus) ---
+SCORING_BENCHMARK_INDUSTRY = os.getenv("SCORING_BENCHMARK_INDUSTRY", "").strip()
+
+
+# SMTP (optional — email_service sends when host is set)
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_EMAIL = os.getenv("SMTP_EMAIL", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in ("1", "true", "yes")
+SENDER_NAME = os.getenv("SENDER_NAME", "Lead Engine")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "").strip() or SMTP_EMAIL
+EMAIL_SIGNATURE = os.getenv("EMAIL_SIGNATURE", "").replace("\\n", "\n")

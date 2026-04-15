@@ -1,0 +1,11 @@
+Lead context (use verbatim names; do not fabricate data):
+
+- Name: {name}
+- Company: {company}
+- Industry: {industry}
+- Job title: {job_title}
+- Company website: {company_website}
+- Known pain points / notes: {pain_points}
+- Opportunity summary (what we offer / angle): {opportunity_summary}
+
+Produce the JSON object as specified in your system instructions.
