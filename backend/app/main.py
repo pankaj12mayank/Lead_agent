@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Lead Intelligence API",
+    title="LeadPilot API",
     version="1.0.0",
     lifespan=lifespan,
     debug=bool(getattr(config, "DEBUG", False)),

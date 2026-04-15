@@ -25,20 +25,6 @@ export async function fetchLeads(params: FetchLeadsParams = {}) {
   return data
 }
 
-/** Pull up to ``max`` leads across pages (for charts). Respects API page_size cap (200). */
-export async function fetchAllLeads(max = 10000) {
-  const items: Lead[] = []
-  let page = 1
-  const page_size = 200
-  while (items.length < max) {
-    const r = await fetchLeads({ page, page_size })
-    items.push(...r.items)
-    if (page >= r.pages || r.items.length === 0) break
-    page += 1
-  }
-  return items.slice(0, max)
-}
-
 export async function createLead(body: Partial<Lead> & { full_name: string; source_platform: string }) {
   const { data } = await api.post<Lead>('/leads', body)
   return data

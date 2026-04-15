@@ -35,6 +35,18 @@ export type AuthResponse = {
   user?: User
 }
 
+export type DashboardMonthPoint = {
+  month: string
+  count: number
+}
+
+export type DashboardTierMixRow = {
+  platform: string
+  hot: number
+  warm: number
+  cold: number
+}
+
 export type DashboardData = {
   total?: number
   by_status?: Record<string, number>
@@ -50,6 +62,9 @@ export type DashboardData = {
   platform_distribution?: Record<string, number>
   status_distribution?: Record<string, number>
   recent_history_events?: number
+  /** Aggregated server-side for charts (avoids loading all leads on the client). */
+  leads_by_month?: DashboardMonthPoint[]
+  tier_mix_by_platform?: DashboardTierMixRow[]
 }
 
 export type PlatformRow = {

@@ -46,8 +46,24 @@ class ScraperRunConfig:
 
 @dataclass
 class ScraperRunResult:
+    """Final scrape outcome (sync response + job completion payload)."""
+
     run_id: str
     platform: str
-    collected: int
+    collected: int  # legacy alias: equals ``saved``
     csv_path: Optional[str]
     errors: list[str] = field(default_factory=list)
+    success: bool = True
+    total_found: int = 0  # gross cards seen from extract (includes duplicates)
+    saved: int = 0  # unique rows persisted
+    duplicates_removed: int = 0
+    csv_file: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        import os
+
+        self.saved = int(self.saved or self.collected)
+        self.collected = int(self.saved)
+        self.success = len(self.errors) == 0
+        if self.csv_path and not self.csv_file:
+            self.csv_file = os.path.basename(self.csv_path)

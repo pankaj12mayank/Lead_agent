@@ -1,0 +1,5 @@
+2026-04-15 18:31:32,339 | WARNING | backend.app.middleware.error_handlers | POST /scraper/sessions/panka/manual-login -> HTTP 404: Unknown platform: panka
+2026-04-15 18:31:33,820 | WARNING | backend.app.middleware.error_handlers | POST /scraper/sessions/panka/manual-login -> HTTP 404: Unknown platform: panka
+2026-04-15 18:31:43,311 | WARNING | backend.app.middleware.error_handlers | POST /scraper/sessions/other/manual-login -> HTTP 404: Unknown platform: other
+2026-04-15 18:31:50,882 | ERROR | backend.app.middleware.error_handlers | POST /scraper/sessions/linkedin/manual-login -> HTTP 500: Manual login flow failed: Page.wait_for_timeout: Target page, context or browser has been closed
+2026-04-15 18:33:45,549 | ERROR | backend.app.middleware.error_handlers | POST /scraper/sessions/apollo/manual-login -> HTTP 500: Manual login flow failed: Page.wait_for_timeout: Target page, context or browser has been closed

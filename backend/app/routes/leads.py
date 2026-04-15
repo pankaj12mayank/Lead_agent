@@ -22,11 +22,19 @@ from backend.app.schemas.lead import (
     StatusUpdate,
 )
 from services import (
+    analytics_service,
     email_history_service,
     history_service,
     lead_orm_service,
     status_history_service,
 )
+
+
+def _invalidate_dashboard_cache() -> None:
+    try:
+        analytics_service.invalidate_analytics_cache()
+    except Exception:
+        pass
 from services.platform_service import normalize_platform
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -66,6 +74,7 @@ def _create_from_body(db: Session, body: LeadCreate, user_id: str) -> LeadRespon
         user_id,
     )
     db.commit()
+    _invalidate_dashboard_cache()
     return LeadResponse.from_orm_lead(stored)
 
 
@@ -226,6 +235,7 @@ def bulk_delete_leads(
         user["id"],
     )
     db.commit()
+    _invalidate_dashboard_cache()
     return BulkDeleteResponse(deleted=n)
 
 
@@ -284,6 +294,8 @@ async def bulk_import(
         {"created": created, "errors": len(errors)},
         user["id"],
     )
+    if created:
+        _invalidate_dashboard_cache()
     return BulkImportResponse(created=created, errors=errors)
 
 
@@ -358,6 +370,7 @@ def put_lead(
         raise HTTPException(status_code=404, detail="Lead not found")
     history_service.record_event(lead_id, "lead.updated", {"fields": list(patch.keys())}, user["id"])
     db.commit()
+    _invalidate_dashboard_cache()
     return LeadResponse.from_orm_lead(row)
 
 
@@ -376,6 +389,7 @@ def patch_lead(
         raise HTTPException(status_code=404, detail="Lead not found")
     history_service.record_event(lead_id, "lead.updated", {"fields": list(patch.keys())}, user["id"])
     db.commit()
+    _invalidate_dashboard_cache()
     return LeadResponse.from_orm_lead(row)
 
 
@@ -390,6 +404,7 @@ def remove_lead(
         raise HTTPException(status_code=404, detail="Lead not found")
     db.commit()
     history_service.record_event(lead_id, "lead.deleted", None, user["id"])
+    _invalidate_dashboard_cache()
     return {"deleted": True}
 
 
@@ -416,4 +431,5 @@ def patch_status(
         user["id"],
     )
     db.commit()
+    _invalidate_dashboard_cache()
     return LeadResponse.from_orm_lead(row)

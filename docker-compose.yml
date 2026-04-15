@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:5173,http://localhost:5173}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      API_META_DB_PATH: /app/database/api_meta.db
+      SQLITE_DB_PATH: /app/database/leads.db
+      EXPORTS_DIR: /app/exports
+      SESSIONS_DIR: /app/sessions
+      LOGS_DIR: /app/logs
+    volumes:
+      - leadpilot-db:/app/database
+      - leadpilot-exports:/app/exports
+      - leadpilot-logs:/app/logs
+      - leadpilot-sessions:/app/sessions
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://127.0.0.1:8000}
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  leadpilot-db:
+  leadpilot-exports:
+  leadpilot-logs:
+  leadpilot-sessions:

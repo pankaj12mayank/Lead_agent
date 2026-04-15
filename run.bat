@@ -4,9 +4,10 @@ setlocal
 cd /d "%~dp0"
 
 echo.
-echo   Lead Intelligence — starting API + Vite (React)
+echo   LeadPilot — starting API + Vite (React)
 echo   Browser: http://localhost:5173   API: http://127.0.0.1:8000/docs
 echo   Stop: Ctrl+C here and close the API window
+echo   Alternative: from repo root run  npm install  then  npm run dev  (single terminal)
 echo.
 
 echo Installing Python requirements (quiet)...
@@ -18,7 +19,7 @@ if errorlevel 1 (
 )
 
 echo Starting API in a new window...
-start "Lead Intelligence API" cmd /k "%~dp0scripts\start-api.bat"
+start "LeadPilot API" cmd /k "%~dp0scripts\start-api.bat"
 echo Waiting 2 seconds for API...
 timeout /t 2 /nobreak >nul
 

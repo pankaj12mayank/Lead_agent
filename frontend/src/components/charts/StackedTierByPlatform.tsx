@@ -9,44 +9,47 @@ import {
   YAxis,
 } from 'recharts'
 
-import {
-  CHART_AXIS,
-  CHART_COLD,
-  CHART_GRID,
-  CHART_HOT,
-  CHART_TICK,
-  CHART_WARM,
-  tooltipContentStyle,
-  tooltipLabelStyle,
-} from '@/lib/chartTheme'
+import { tooltipLabelStyle as tooltipLabelStyleFn, tooltipStyles, useChartPalette } from '@/lib/chartTheme'
 
 export type TierStackRow = { platform: string; hot: number; warm: number; cold: number }
 
-const wrap = 'h-80 w-full rounded-2xl border border-surface-border bg-surface-card p-4 shadow-card lg:h-96'
+const wrap =
+  'h-80 w-full rounded-2xl border border-surface-border bg-premium-card-light p-4 shadow-card transition-colors dark:bg-premium-card-dark lg:h-96'
 
 export function StackedTierByPlatform({ data }: { data: TierStackRow[] }) {
+  const p = useChartPalette()
+  const tip = tooltipStyles(p)
+  const tipLabel = tooltipLabelStyleFn(p)
+
   return (
     <div className={wrap}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={p.grid} vertical={false} />
           <XAxis
             dataKey="platform"
-            tick={{ fill: CHART_TICK, fontSize: 11 }}
-            axisLine={{ stroke: CHART_AXIS }}
+            tick={{ fill: p.tick, fontSize: 11 }}
+            axisLine={{ stroke: p.axis }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: CHART_TICK, fontSize: 11 }}
+            tick={{ fill: p.tick, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}
           />
-          <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} />
-          <Legend wrapperStyle={{ fontSize: 12 }} formatter={(v) => <span className="text-zinc-400 capitalize">{v}</span>} />
-          <Bar dataKey="hot" stackId="t" fill={CHART_HOT} radius={[0, 0, 0, 0]} maxBarSize={44} />
-          <Bar dataKey="warm" stackId="t" fill={CHART_WARM} maxBarSize={44} />
-          <Bar dataKey="cold" stackId="t" fill={CHART_COLD} radius={[8, 8, 0, 0]} maxBarSize={44} />
+          <Tooltip contentStyle={tip} labelStyle={tipLabel} />
+          <Legend
+            wrapperStyle={{ fontSize: 12, color: p.tick }}
+            formatter={(v) => (
+              <span style={{ color: p.tick }} className="capitalize">
+                {v}
+              </span>
+            )}
+          />
+          <Bar dataKey="hot" stackId="t" fill={p.hot} radius={[0, 0, 0, 0]} maxBarSize={44} />
+          <Bar dataKey="warm" stackId="t" fill={p.warm} maxBarSize={44} />
+          <Bar dataKey="cold" stackId="t" fill={p.cold} radius={[8, 8, 0, 0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </div>

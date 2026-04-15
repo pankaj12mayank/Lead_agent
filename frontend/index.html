@@ -1,10 +1,33 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var k = 'leadpilot-theme-preference'
+          var t = localStorage.getItem(k) || 'system'
+          var dark =
+            t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (e) {}
+      })()
+    </script>
     <meta charset="UTF-8" />
+    <!-- Headings: Plus Jakarta Sans; UI body: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lead Intelligence</title>
+    <meta
+      name="description"
+      content="LeadPilot is lead management and sales CRM software for prospecting, lead scoring, sales outreach tracking, sales analytics, and pipeline visibility for teams and agencies."
+    />
+    <title>LeadPilot | Lead management and sales CRM</title>
   </head>
   <body>
     <div id="root"></div>

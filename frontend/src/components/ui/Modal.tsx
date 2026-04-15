@@ -32,24 +32,24 @@ export function Modal({ open, title, onClose, children, className }: ModalProps)
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+        className="absolute inset-0 bg-zinc-900/50 backdrop-blur-md dark:bg-black/70"
         aria-label="Close modal"
         onClick={onClose}
       />
       <div
         className={cn(
-          'relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-surface-border bg-surface-raised p-6 shadow-glow',
+          'relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-surface-border bg-surface-card/95 p-6 shadow-glow backdrop-blur-xl dark:bg-zinc-950/90',
           className,
         )}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id="modal-title" className="text-lg font-semibold tracking-tight text-white">
+          <h2 id="modal-title" className="font-display text-xl font-semibold tracking-tight text-ink sm:text-2xl">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-white/5 hover:text-zinc-200"
+            className="rounded-lg p-1.5 text-ink-subtle transition hover:bg-field hover:text-ink dark:hover:bg-white/5"
           >
             <X className="h-5 w-5" />
           </button>

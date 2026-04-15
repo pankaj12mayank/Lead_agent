@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(
-        _request: Request,
+        request: Request,
         exc: StarletteHTTPException,
     ) -> JSONResponse:
         detail: Any = exc.detail
@@ -26,6 +26,10 @@ def register_exception_handlers(app: FastAPI) -> None:
             body = {"detail": detail}
         else:
             body = {"detail": detail}
+        if exc.status_code >= 500:
+            logger.error("%s %s -> HTTP %s: %s", request.method, request.url.path, exc.status_code, detail)
+        elif exc.status_code >= 400:
+            logger.warning("%s %s -> HTTP %s: %s", request.method, request.url.path, exc.status_code, detail)
         return JSONResponse(status_code=exc.status_code, content=body)
 
     @app.exception_handler(RequestValidationError)

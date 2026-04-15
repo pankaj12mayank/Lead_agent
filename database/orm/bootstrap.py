@@ -31,6 +31,19 @@ def get_engine():
     return _engine
 
 
+def _ensure_lead_indexes(engine) -> None:
+    """Add query indexes on existing SQLite DBs (CREATE INDEX IF NOT EXISTS)."""
+    stmts = [
+        "CREATE INDEX IF NOT EXISTS ix_leads_email ON leads (email)",
+        "CREATE INDEX IF NOT EXISTS ix_leads_company_name ON leads (company_name)",
+        "CREATE INDEX IF NOT EXISTS ix_leads_score ON leads (score)",
+        "CREATE INDEX IF NOT EXISTS ix_leads_created_at ON leads (created_at)",
+    ]
+    with engine.begin() as cx:
+        for sql in stmts:
+            cx.execute(text(sql))
+
+
 def _ensure_lead_columns(engine) -> None:
     """SQLite lightweight migrations for ``leads`` (ADD COLUMN if missing)."""
     with engine.begin() as cx:
@@ -47,6 +60,7 @@ def init_sa_tables() -> None:
     engine = get_engine()
     Base.metadata.create_all(bind=engine)
     _ensure_lead_columns(engine)
+    _ensure_lead_indexes(engine)
 
 
 def get_session_factory():

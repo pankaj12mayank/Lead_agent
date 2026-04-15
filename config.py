@@ -46,6 +46,10 @@ LOGS_DIR = os.getenv("LOGS_DIR", "logs").strip() or "logs"
 def ensure_data_dirs() -> None:
     for d in (EXPORTS_DIR, SESSIONS_DIR, LOGS_DIR):
         os.makedirs(d, exist_ok=True)
+    for p in (SQLITE_DB_PATH, API_META_DB_PATH):
+        parent = os.path.dirname(os.path.abspath(p))
+        if parent:
+            os.makedirs(parent, exist_ok=True)
 
 
 # --- Scraper (Playwright): safe delays & per-run lead caps ---

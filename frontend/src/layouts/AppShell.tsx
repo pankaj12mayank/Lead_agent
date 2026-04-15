@@ -3,51 +3,33 @@ import {
   Layers,
   LineChart,
   LogOut,
+  Search,
   Settings,
   Sparkles,
   Users,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
+import { MarketingFooter } from '@/components/layout/MarketingFooter'
 import { TopNav } from '@/components/layout/TopNav'
+import { APP_NAME, DEFAULT_META_DESCRIPTION, ROUTE_META } from '@/lib/copy/appCopy'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/store/authStore'
 import { useSidebarStore } from '@/store/sidebarStore'
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/search-leads', label: 'Lead search', icon: Search },
   { to: '/leads', label: 'Leads', icon: Users },
   { to: '/platforms', label: 'Platforms', icon: Layers },
   { to: '/analytics', label: 'Analytics', icon: LineChart },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
-const meta: Record<string, { title: string; subtitle?: string }> = {
-  '/dashboard': {
-    title: 'Dashboard',
-    subtitle: 'Pipeline health, acquisition sources, and tier mix at a glance.',
-  },
-  '/leads': {
-    title: 'Leads',
-    subtitle: 'Search, filter, and move deals forward without leaving this view.',
-  },
-  '/platforms': {
-    title: 'Platforms',
-    subtitle: 'Sessions, logins, and scraper runs across connected sources.',
-  },
-  '/analytics': {
-    title: 'Analytics',
-    subtitle: 'Funnel, conversion, and channel performance for revenue teams.',
-  },
-  '/settings': {
-    title: 'Settings',
-    subtitle: 'Models, scraper defaults, and export preferences for this workspace.',
-  },
-}
-
 function pathKey(pathname: string) {
   const p = pathname.replace(/\/$/, '') || '/dashboard'
-  return meta[p] ? p : '/dashboard'
+  return ROUTE_META[p] ? p : '/dashboard'
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
@@ -60,14 +42,14 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+              'flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200',
               isActive
-                ? 'border border-accent/30 bg-accent-glow text-accent shadow-glow'
-                : 'border border-transparent text-zinc-400 hover:border-surface-border hover:bg-white/[0.03] hover:text-zinc-100',
+                ? 'border-amber-500/35 bg-gradient-to-r from-amber-500/12 to-emerald-600/8 text-ink shadow-sm ring-1 ring-amber-500/20 dark:from-amber-400/15 dark:to-emerald-500/10 dark:ring-amber-400/25'
+                : 'border-transparent text-ink-muted hover:border-surface-border hover:bg-field/60 hover:text-ink dark:hover:bg-white/[0.04]',
             )
           }
         >
-          <Icon className="h-4 w-4 shrink-0 opacity-90" />
+          <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={1.5} />
           {label}
         </NavLink>
       ))}
@@ -81,14 +63,22 @@ export function AppShell() {
   const mobileOpen = useSidebarStore((s) => s.mobileOpen)
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen)
   const key = pathKey(pathname)
-  const { title, subtitle } = meta[key] ?? meta['/dashboard']
+  const { title, subtitle, documentDescription } = ROUTE_META[key]
+
+  useEffect(() => {
+    document.title = `${title} | ${APP_NAME}`
+    const el = document.querySelector('meta[name="description"]')
+    if (el) {
+      el.setAttribute('content', documentDescription ?? DEFAULT_META_DESCRIPTION)
+    }
+  }, [title, documentDescription])
 
   return (
-    <div className="flex min-h-screen bg-black text-zinc-100">
+    <div className="flex min-h-screen bg-surface text-ink">
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-zinc-900/40 backdrop-blur-sm dark:bg-black/60 lg:hidden"
           aria-label="Close menu"
           onClick={() => setMobileOpen(false)}
         />
@@ -96,31 +86,31 @@ export function AppShell() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-surface-border bg-black px-4 py-6 transition-transform lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-surface-border bg-premium-card-light px-4 py-6 shadow-card transition-transform dark:bg-premium-card-dark lg:static lg:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
       >
         <div className="mb-8 flex items-center gap-2 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-glow ring-1 ring-accent/30">
-            <Sparkles className="h-5 w-5 text-accent" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/25 to-emerald-600/15 shadow-glow-gold ring-1 ring-amber-500/25 dark:from-amber-400/20 dark:to-emerald-500/10 dark:ring-amber-400/20">
+            <Sparkles className="h-5 w-5 text-amber-700 dark:text-amber-300" strokeWidth={1.5} />
           </div>
           <div>
-            <div className="text-sm font-semibold tracking-tight text-white">Lead Intelligence</div>
-            <div className="text-xs text-zinc-500">SaaS workspace</div>
+            <div className="type-brand-wordmark">{APP_NAME}</div>
+            <div className="text-xs text-ink-subtle">Leads, platforms, outreach</div>
           </div>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           <NavItems onNavigate={() => setMobileOpen(false)} />
         </nav>
         <div className="mt-auto border-t border-surface-border pt-4">
-          <div className="truncate px-2 text-xs text-zinc-500">{user?.email}</div>
+          <div className="truncate px-2 text-xs text-ink-subtle">{user?.email}</div>
           <button
             type="button"
             onClick={() => logout()}
-            className="mt-2 flex w-full items-center gap-2 rounded-xl border border-transparent px-3 py-2.5 text-sm text-zinc-400 transition hover:border-surface-border hover:bg-white/[0.03] hover:text-zinc-100"
+            className="mt-2 flex w-full items-center gap-2 rounded-xl border border-transparent px-3 py-2.5 text-sm text-ink-muted transition hover:border-surface-border hover:bg-field/80 hover:text-ink dark:hover:bg-white/[0.04]"
           >
-            <LogOut className="h-4 w-4" />
-            Sign out
+            <LogOut className="h-4 w-4" strokeWidth={1.5} />
+            Sign Out
           </button>
         </div>
       </aside>
@@ -129,6 +119,7 @@ export function AppShell() {
         <TopNav title={title} subtitle={subtitle} />
         <div className="flex-1 overflow-auto px-4 py-8 lg:px-10 lg:py-10">
           <Outlet />
+          <MarketingFooter />
         </div>
       </div>
     </div>

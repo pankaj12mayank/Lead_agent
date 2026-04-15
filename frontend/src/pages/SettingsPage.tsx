@@ -58,7 +58,7 @@ export function SettingsPage() {
           setNotes(str(s.notes))
         }
       } catch {
-        if (!cancelled) setMsg('Could not load settings.')
+        if (!cancelled) setMsg('Unable to load settings. Refresh the page and try again.')
       }
     })()
     return () => {
@@ -83,9 +83,9 @@ export function SettingsPage() {
         notes: notes || undefined,
       })
       setSettings(next)
-      setMsg('Saved.')
+      setMsg('Settings saved successfully.')
     } catch {
-      setMsg('Save failed.')
+      setMsg('Unable to save settings. Verify your connection and try again.')
     } finally {
       setBusy(false)
     }
@@ -93,8 +93,8 @@ export function SettingsPage() {
 
   if (!settings) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-zinc-500">
-        Loading settings…
+      <div className="flex min-h-[40vh] items-center justify-center text-sm text-ink-muted">
+        Loading workspace settings
       </div>
     )
   }
@@ -102,18 +102,21 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <form onSubmit={onSave} className="space-y-8">
-        <section className="rounded-2xl border border-surface-border bg-surface-card p-8 shadow-card">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Ollama & AI</h2>
+        <section className="rounded-2xl border border-surface-border bg-premium-card-light p-8 shadow-card dark:bg-premium-card-dark">
+          <h2 className="type-panel-title mb-2">AI message configuration</h2>
+          <p className="text-xs leading-relaxed text-ink-muted">
+            Controls how outreach messages are generated for sales teams using your connected model runtime.
+          </p>
           <div className="mt-6 space-y-5">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500" htmlFor="preset">
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="preset">
                 Model preset
               </label>
               <select
                 id="preset"
                 value={modelPreset}
                 onChange={(e) => setModelPreset(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+                className="field-input mt-2"
               >
                 {MODEL_PRESETS.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -124,122 +127,125 @@ export function SettingsPage() {
             </div>
             {modelPreset === 'custom' ? (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500" htmlFor="custom">
+                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="custom">
                   Custom model tag
                 </label>
                 <input
                   id="custom"
                   value={modelCustom}
                   onChange={(e) => setModelCustom(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+                  className="field-input mt-2"
                   placeholder="e.g. llama3:latest"
                 />
               </div>
             ) : null}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-black/30 px-4 py-3">
+              <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-field/60 px-4 py-3 dark:bg-zinc-900/40">
                 <input
                   type="checkbox"
                   checked={useOllama}
                   onChange={(e) => setUseOllama(e.target.checked)}
-                  className="h-4 w-4 rounded border-surface-border bg-black text-accent focus:ring-accent"
+                  className="h-4 w-4 rounded border-surface-border bg-field text-amber-700 accent-amber-600 focus:ring-amber-500/30 dark:text-amber-400"
                 />
-                <span className="text-sm text-zinc-300">Use Ollama for generation</span>
+                <span className="text-sm text-ink-muted">Use Ollama for AI message generation</span>
               </label>
-              <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-black/30 px-4 py-3">
+              <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-field/60 px-4 py-3 dark:bg-zinc-900/40">
                 <input
                   type="checkbox"
                   checked={freeApi}
                   onChange={(e) => setFreeApi(e.target.checked)}
-                  className="h-4 w-4 rounded border-surface-border bg-black text-accent focus:ring-accent"
+                  className="h-4 w-4 rounded border-surface-border bg-field text-amber-700 accent-amber-600 focus:ring-amber-500/30 dark:text-amber-400"
                 />
-                <span className="text-sm text-zinc-300">Free API mode (skip AI)</span>
+                <span className="text-sm text-ink-muted">Free API mode (skip model generation)</span>
               </label>
             </div>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-surface-border bg-surface-card p-8 shadow-card">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Scraper defaults</h2>
-          <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-            Stored in runtime settings for your team. Scraper runs still send explicit delays from the Platforms
-            dialog; these values are defaults when opening that dialog.
+        <section className="rounded-2xl border border-surface-border bg-premium-card-light p-8 shadow-card dark:bg-premium-card-dark">
+          <h2 className="type-panel-title mb-2">Delay and safety settings</h2>
+          <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+            Workspace defaults for prospecting cadence and batch size. Individual runs can still override delays from
+            platform or lead search dialogs.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Delay min (s)</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Minimum delay (s)</label>
               <input
                 type="number"
                 step="0.5"
                 min={1}
                 value={delayMin}
                 onChange={(e) => setDelayMin(Number(e.target.value))}
-                className="mt-2 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+                className="field-input mt-2"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Delay max (s)</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Maximum delay (s)</label>
               <input
                 type="number"
                 step="0.5"
                 min={1}
                 value={delayMax}
                 onChange={(e) => setDelayMax(Number(e.target.value))}
-                className="mt-2 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+                className="field-input mt-2"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Lead limit default</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Default lead limit</label>
               <input
                 type="number"
                 min={1}
                 max={50}
                 value={maxLeads}
                 onChange={(e) => setMaxLeads(Number(e.target.value))}
-                className="mt-2 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+                className="field-input mt-2"
               />
             </div>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-surface-border bg-surface-card p-8 shadow-card">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">CSV exports</h2>
-          <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-            Lead CSV downloads use the server export pipeline. Optional directory hint is persisted for operators
-            aligning with deployment docs.
+        <section className="rounded-2xl border border-surface-border bg-premium-card-light p-8 shadow-card dark:bg-premium-card-dark">
+          <h2 className="type-panel-title mb-2">Export preferences</h2>
+          <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+            Lead export files use the server export pipeline. Optional directory notes help operators align deployments
+            with your data retention policy.
           </p>
           <div className="mt-6">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500" htmlFor="exports">
+            <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="exports">
               Exports directory (optional note)
             </label>
             <input
               id="exports"
               value={exportsDir}
               onChange={(e) => setExportsDir(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+              className="field-input mt-2"
               placeholder="exports"
             />
           </div>
         </section>
 
-        <section className="rounded-2xl border border-surface-border bg-surface-card p-8 shadow-card">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Workspace notes</h2>
+        <section className="rounded-2xl border border-surface-border bg-premium-card-light p-8 shadow-card dark:bg-premium-card-dark">
+          <h2 className="type-panel-title mb-2">Account settings</h2>
+          <p className="text-xs leading-relaxed text-ink-muted">
+            Internal documentation for administrators. Not shown to prospects or external contacts.
+          </p>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={4}
-            className="mt-4 w-full rounded-xl border border-surface-border bg-black/50 px-3 py-2.5 text-sm text-white outline-none focus:border-accent/40"
+            className="field-input mt-4"
           />
         </section>
 
-        {msg ? <p className="text-sm text-zinc-400">{msg}</p> : null}
+        {msg ? <p className="text-sm text-ink-muted">{msg}</p> : null}
 
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black shadow-glow transition hover:bg-accent-muted disabled:opacity-50"
+          className="btn-primary px-6 py-3 text-sm disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save settings'}
+          {busy ? 'Saving' : 'Save Changes'}
         </button>
       </form>
     </div>

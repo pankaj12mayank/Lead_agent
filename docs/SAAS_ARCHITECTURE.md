@@ -7,9 +7,8 @@ This document is the **single blueprint** for the monorepo: layout, APIs, schema
 ## 1. Monorepo layout
 
 ```text
-Lead_agent/
+LeadPilot/
 ├── frontend/                 # React + Vite + Tailwind + React Router + Axios + Zustand + TanStack Table + Recharts
-├── frontend_nextjs_legacy/ # Previous Next.js UI (reference only; not started by run.bat)
 ├── backend/
 │   ├── app/                  # FastAPI app, routers, schemas, middleware
 │   ├── modules/              # Domain packages (scraper, scorer, exporter, …)

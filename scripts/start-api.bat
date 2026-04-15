@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0.."
-title Lead Intelligence API
+title LeadPilot API
 python -m pip install -r requirements.txt -q
 if errorlevel 1 (
   echo Pip failed.
