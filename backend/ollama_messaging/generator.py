@@ -9,7 +9,7 @@ import config
 from backend.ollama_messaging.fallback import build_fallback_pack, merge_with_fallback
 from backend.ollama_messaging.ollama_service import OllamaGenerateService
 from backend.ollama_messaging.types import LeadMessageInput, LeadMessageOutput, ModelFamily
-from services import runtime_settings
+from services import external_llm_service, runtime_settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -99,16 +99,28 @@ def generate_lead_messages(
     family = _normalize_model_family(model_family)
     model_tag = _resolve_ollama_tag(family)
 
-    if runtime_settings.get_free_api_mode() or not runtime_settings.get_use_ollama():
-        logger.info("Ollama skipped (free_api_mode or use_ollama false); using template fallback")
+    if runtime_settings.get_free_api_mode():
+        logger.info("free_api_mode; using template fallback")
         return build_fallback_pack(lead)
 
     system = _read_prompt("system.txt")
     user_prompt = _fill_user_template(lead)
     full_prompt = user_prompt
 
-    client = ollama or OllamaGenerateService()
-    raw = client.generate_text(model_tag, full_prompt, system=system)
+    provider = runtime_settings.get_ai_provider()
+    raw: Optional[str] = None
+
+    if provider == "external_api":
+        if not runtime_settings.get_external_api_key():
+            logger.warning("external_api selected but no API key; using template fallback")
+            return build_fallback_pack(lead)
+        raw = external_llm_service.chat_completion_json(system=system, user=full_prompt)
+    elif provider == "ollama" and runtime_settings.get_use_ollama():
+        client = ollama or OllamaGenerateService()
+        raw = client.generate_text(model_tag, full_prompt, system=system)
+    else:
+        logger.info("Ollama disabled or provider not ollama; using template fallback")
+        return build_fallback_pack(lead)
 
     if not raw:
         logger.warning("Using full template fallback (no Ollama text, model=%s)", model_tag)

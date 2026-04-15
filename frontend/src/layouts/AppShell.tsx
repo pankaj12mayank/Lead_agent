@@ -1,4 +1,5 @@
 import {
+  Info,
   LayoutDashboard,
   Layers,
   LineChart,
@@ -14,8 +15,10 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { MarketingFooter } from '@/components/layout/MarketingFooter'
 import { TopNav } from '@/components/layout/TopNav'
 import { APP_NAME, DEFAULT_META_DESCRIPTION, ROUTE_META } from '@/lib/copy/appCopy'
+import { resolveMediaUrl } from '@/lib/utils/mediaUrl'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/store/authStore'
+import { useBrandingStore } from '@/store/brandingStore'
 import { useSidebarStore } from '@/store/sidebarStore'
 
 const nav = [
@@ -25,6 +28,7 @@ const nav = [
   { to: '/platforms', label: 'Platforms', icon: Layers },
   { to: '/analytics', label: 'Analytics', icon: LineChart },
   { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/about', label: 'About', icon: Info },
 ]
 
 function pathKey(pathname: string) {
@@ -59,6 +63,8 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppShell() {
   const { pathname } = useLocation()
+  const productName = useBrandingStore((s) => s.branding.product_name)
+  const logoUrl = useBrandingStore((s) => s.branding.logo_url)
   const { user, logout } = useAuthStore()
   const mobileOpen = useSidebarStore((s) => s.mobileOpen)
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen)
@@ -66,12 +72,12 @@ export function AppShell() {
   const { title, subtitle, documentDescription } = ROUTE_META[key]
 
   useEffect(() => {
-    document.title = `${title} | ${APP_NAME}`
+    document.title = `${title} | ${productName || APP_NAME}`
     const el = document.querySelector('meta[name="description"]')
     if (el) {
       el.setAttribute('content', documentDescription ?? DEFAULT_META_DESCRIPTION)
     }
-  }, [title, documentDescription])
+  }, [title, documentDescription, productName])
 
   return (
     <div className="flex min-h-screen bg-surface text-ink">
@@ -91,11 +97,19 @@ export function AppShell() {
         )}
       >
         <div className="mb-8 flex items-center gap-2 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/25 to-emerald-600/15 shadow-glow-gold ring-1 ring-amber-500/25 dark:from-amber-400/20 dark:to-emerald-500/10 dark:ring-amber-400/20">
-            <Sparkles className="h-5 w-5 text-amber-700 dark:text-amber-300" strokeWidth={1.5} />
-          </div>
-          <div>
-            <div className="type-brand-wordmark">{APP_NAME}</div>
+          {logoUrl ? (
+            <img
+              src={resolveMediaUrl(logoUrl)}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-xl border border-surface-border bg-field object-contain p-0.5"
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/25 to-emerald-600/15 shadow-glow-gold ring-1 ring-amber-500/25 dark:from-amber-400/20 dark:to-emerald-500/10 dark:ring-amber-400/20">
+              <Sparkles className="h-5 w-5 text-amber-700 dark:text-amber-300" strokeWidth={1.5} />
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="type-brand-wordmark truncate">{productName || APP_NAME}</div>
             <div className="text-xs text-ink-subtle">Leads, platforms, outreach</div>
           </div>
         </div>

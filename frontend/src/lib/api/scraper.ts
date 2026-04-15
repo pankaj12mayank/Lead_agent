@@ -11,7 +11,10 @@ export type ScraperStatus = {
 
 export type SessionInfo = {
   platform: string
+  /** True when login verified (not only profile files on disk). */
   has_session: boolean
+  has_profile?: boolean
+  connected?: boolean
   path: string
 }
 
@@ -119,5 +122,13 @@ export async function openManualLogin(platform: string, waitSeconds = 180) {
   const { data } = await api.post<{ ok: boolean }>(`/scraper/sessions/${slug}/manual-login`, {
     wait_seconds: waitSeconds,
   })
+  return data
+}
+
+export async function verifyAllSessions() {
+  const { data } = await api.post<{
+    ok: boolean
+    results: Record<string, { connected: boolean; has_profile: boolean }>
+  }>('/scraper/sessions/verify-all')
   return data
 }

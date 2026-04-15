@@ -38,6 +38,42 @@ def get_free_api_mode() -> bool:
     return _truthy(v, bool(config.FREE_API_MODE))
 
 
+def get_ai_provider() -> str:
+    s = settings_service.load_settings()
+    v = (s.get("ai_provider") or "ollama").strip().lower()
+    return v if v in ("ollama", "external_api") else "ollama"
+
+
+def get_external_api_base_url() -> str:
+    s = settings_service.load_settings()
+    u = (s.get("external_api_base_url") or "").strip()
+    return u or "https://api.openai.com/v1/chat/completions"
+
+
+def get_external_api_key() -> str:
+    s = settings_service.load_settings()
+    return str(s.get("external_api_key") or "").strip()
+
+
+def get_external_api_model() -> str:
+    s = settings_service.load_settings()
+    m = (s.get("external_api_model") or "").strip()
+    return m or "gpt-4o-mini"
+
+
+def get_branding() -> dict:
+    s = settings_service.load_settings()
+    b = s.get("branding")
+    if not isinstance(b, dict):
+        return {"product_name": "LeadPilot", "logo_url": "", "favicon_url": "", "footer_copyright": ""}
+    return {
+        "product_name": str(b.get("product_name") or "LeadPilot").strip() or "LeadPilot",
+        "logo_url": str(b.get("logo_url") or "").strip(),
+        "favicon_url": str(b.get("favicon_url") or "").strip(),
+        "footer_copyright": str(b.get("footer_copyright") or "").strip()[:280],
+    }
+
+
 def get_smtp() -> dict[str, Any]:
     s = settings_service.load_settings()
     port = s.get("smtp_port")

@@ -54,6 +54,11 @@ export const ROUTE_META: Record<
     documentDescription:
       'Account settings and platform preferences for outreach automation, lead scoring context, and export pipeline configuration.',
   },
+  '/about': {
+    title: 'About',
+    subtitle: 'Product overview and frequently asked questions for your workspace.',
+    documentDescription: 'About LeadPilot: lead management workspace, prospecting, and CRM-style tracking.',
+  },
 }
 
 /** API status value to professional label (values unchanged for API compatibility) */

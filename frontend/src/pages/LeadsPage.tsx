@@ -157,11 +157,27 @@ export function LeadsPage() {
   const debouncedSearch = useDebouncedValue(filters.search, 400)
   const [platformChoices, setPlatformChoices] = useState<PlatformRow[]>([])
 
-  useEffect(() => {
+  const loadPlatforms = useCallback(() => {
     void listPlatforms()
-      .then(setPlatformChoices)
+      .then((pl) => setPlatformChoices(pl.filter((p) => p.active)))
       .catch(() => setPlatformChoices([]))
   }, [])
+
+  useEffect(() => {
+    loadPlatforms()
+  }, [loadPlatforms])
+
+  useEffect(() => {
+    const onCh = () => loadPlatforms()
+    window.addEventListener('leadpilot-platforms-changed', onCh)
+    return () => window.removeEventListener('leadpilot-platforms-changed', onCh)
+  }, [loadPlatforms])
+
+  useEffect(() => {
+    if (filters.platform && !platformChoices.some((p) => p.slug === filters.platform)) {
+      setPlatform('')
+    }
+  }, [filters.platform, platformChoices, setPlatform])
 
   const load = useCallback(async () => {
     setLoading(true)

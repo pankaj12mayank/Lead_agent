@@ -74,6 +74,9 @@ export type PlatformRow = {
   active: boolean
   builtin: boolean
   created_at: string | null
+  login_url?: string | null
+  session_profile?: boolean
+  session_connected?: boolean
 }
 
 export type AppSettings = Record<string, unknown>

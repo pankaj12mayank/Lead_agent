@@ -21,6 +21,16 @@ def _defaults() -> Dict[str, Any]:
         "sender_email": "",
         "email_signature": "",
         "platform_integrations": {},
+        "ai_provider": "ollama",
+        "external_api_base_url": "https://api.openai.com/v1/chat/completions",
+        "external_api_key": "",
+        "external_api_model": "gpt-4o-mini",
+        "branding": {
+            "product_name": "LeadPilot",
+            "logo_url": "",
+            "favicon_url": "",
+            "footer_copyright": "",
+        },
     }
 
 
@@ -46,7 +56,13 @@ def save_settings(data: Dict[str, Any]) -> None:
 def patch_settings(updates: Dict[str, Any]) -> Dict[str, Any]:
     cur = load_settings()
     for k, v in updates.items():
-        if v is not None:
+        if v is None:
+            continue
+        if k == "branding" and isinstance(v, dict):
+            b = dict(cur.get("branding") or {})
+            b.update(v)
+            cur[k] = b
+        else:
             cur[k] = v
     save_settings(cur)
     return load_settings()

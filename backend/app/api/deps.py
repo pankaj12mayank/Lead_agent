@@ -28,3 +28,16 @@ def get_current_user(
     if not user:
         raise HTTPException(status_code=401, detail="User no longer exists")
     return user
+
+
+def get_current_admin(
+    creds: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> Dict[str, Any]:
+    """JWT with ``admin: true`` claim (admin console, not app users)."""
+    try:
+        payload = decode_access_token(creds.credentials)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if not payload.get("admin"):
+        raise HTTPException(status_code=403, detail="Admin token required")
+    return {"admin": True, "sub": payload.get("sub")}

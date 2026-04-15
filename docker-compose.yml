@@ -15,11 +15,13 @@ services:
       EXPORTS_DIR: /app/exports
       SESSIONS_DIR: /app/sessions
       LOGS_DIR: /app/logs
+      BRANDING_UPLOAD_DIR: /app/storage/branding
     volumes:
       - leadpilot-db:/app/database
       - leadpilot-exports:/app/exports
       - leadpilot-logs:/app/logs
       - leadpilot-sessions:/app/sessions
+      - leadpilot-branding:/app/storage/branding
 
   web:
     build:
@@ -37,3 +39,4 @@ volumes:
   leadpilot-exports:
   leadpilot-logs:
   leadpilot-sessions:
+  leadpilot-branding:

@@ -3,3 +3,18 @@
 2026-04-15 18:31:43,311 | WARNING | backend.app.middleware.error_handlers | POST /scraper/sessions/other/manual-login -> HTTP 404: Unknown platform: other
 2026-04-15 18:31:50,882 | ERROR | backend.app.middleware.error_handlers | POST /scraper/sessions/linkedin/manual-login -> HTTP 500: Manual login flow failed: Page.wait_for_timeout: Target page, context or browser has been closed
 2026-04-15 18:33:45,549 | ERROR | backend.app.middleware.error_handlers | POST /scraper/sessions/apollo/manual-login -> HTTP 500: Manual login flow failed: Page.wait_for_timeout: Target page, context or browser has been closed
+2026-04-15 21:34:14,885 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:34:17,502 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:34:22,878 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:34:24,739 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:37:37,245 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:37:42,571 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:37:47,940 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:37:55,867 | ERROR | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 503: Admin console is disabled. Set ADMIN_EMAIL and ADMIN_PASSWORD in the server environment.
+2026-04-15 21:38:22,743 | WARNING | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 401: Invalid admin email or password
+2026-04-15 21:39:32,275 | WARNING | backend.app.middleware.error_handlers | POST /auth/login -> HTTP 401: Incorrect email or password
+2026-04-15 21:53:15,431 | INFO | httpx | HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-04-15 21:53:28,303 | INFO | httpx | HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-15 21:53:41,550 | INFO | httpx | HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2026-04-15 21:53:44,295 | INFO | httpx | HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-15 21:54:55,424 | WARNING | backend.app.middleware.error_handlers | POST /admin/login -> HTTP 401: Invalid admin email or password

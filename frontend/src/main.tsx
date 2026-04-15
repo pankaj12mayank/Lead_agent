@@ -6,10 +6,12 @@ import App from './App.tsx'
 import './index.css'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { useAuthStore } from '@/store/authStore'
+import { useBrandingStore } from '@/store/brandingStore'
 import { initDocumentTheme } from '@/store/themeStore'
 
 initDocumentTheme()
 useAuthStore.getState().hydrate()
+void useBrandingStore.getState().load()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

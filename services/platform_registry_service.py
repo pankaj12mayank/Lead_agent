@@ -10,16 +10,19 @@ from database.meta_db import init_meta_schema, meta_connection
 from settings.lead_schema import utc_now_iso
 
 
-def create_platform(slug: str, label: str) -> Dict[str, Any]:
+def create_platform(slug: str, label: str, login_url: str) -> Dict[str, Any]:
     init_meta_schema()
-    s = slug.strip().lower().replace(" ", "_")
+    s = slug.strip().lower().replace(" ", "_").replace("-", "_")
+    url = (login_url or "").strip()
+    if not url:
+        raise ValueError("login_url_required")
     if s in PLATFORM_CANONICAL or s == "other":
         raise ValueError("reserved_slug")
     with meta_connection() as cx:
         try:
             cx.execute(
-                "INSERT INTO platforms (slug, label, active, created_at) VALUES (?, ?, 1, ?)",
-                (s, label.strip(), utc_now_iso()),
+                "INSERT INTO platforms (slug, label, active, created_at, login_url) VALUES (?, ?, 1, ?, ?)",
+                (s, label.strip(), utc_now_iso(), url),
             )
         except sqlite3.IntegrityError:
             raise ValueError("slug_taken") from None
@@ -32,7 +35,7 @@ def get_platform(platform_id: int) -> Optional[Dict[str, Any]]:
     init_meta_schema()
     with meta_connection() as cx:
         cur = cx.execute(
-            "SELECT id, slug, label, active, created_at FROM platforms WHERE id = ?",
+            "SELECT id, slug, label, active, created_at, login_url FROM platforms WHERE id = ?",
             (platform_id,),
         )
         r = cur.fetchone()
@@ -45,7 +48,7 @@ def list_custom() -> List[Dict[str, Any]]:
     init_meta_schema()
     with meta_connection() as cx:
         cur = cx.execute(
-            "SELECT id, slug, label, active, created_at FROM platforms ORDER BY id ASC"
+            "SELECT id, slug, label, active, created_at, login_url FROM platforms ORDER BY id ASC"
         )
         return [_row_to_dict(r) for r in cur.fetchall()]
 
@@ -58,7 +61,46 @@ def _row_to_dict(r: Any) -> Dict[str, Any]:
         "active": bool(r["active"]),
         "created_at": r["created_at"],
         "builtin": False,
+        "login_url": (r["login_url"] if "login_url" in r.keys() else None) or "",
     }
+
+
+def get_builtin_active(slug: str) -> bool:
+    init_meta_schema()
+    s = slug.strip().lower().replace(" ", "_")
+    with meta_connection() as cx:
+        cur = cx.execute(
+            "SELECT active FROM platform_builtin_overrides WHERE slug = ?",
+            (s,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return True
+        return bool(row["active"])
+
+
+def set_builtin_active(slug: str, active: bool) -> None:
+    init_meta_schema()
+    s = slug.strip().lower().replace(" ", "_")
+    with meta_connection() as cx:
+        cx.execute(
+            """
+            INSERT INTO platform_builtin_overrides (slug, active) VALUES (?, ?)
+            ON CONFLICT(slug) DO UPDATE SET active = excluded.active
+            """,
+            (s, 1 if active else 0),
+        )
+
+
+def get_custom_login_url(slug: str) -> Optional[str]:
+    init_meta_schema()
+    s = slug.strip().lower().replace(" ", "_")
+    with meta_connection() as cx:
+        cur = cx.execute("SELECT login_url FROM platforms WHERE slug = ?", (s,))
+        row = cur.fetchone()
+        if not row or not row["login_url"]:
+            return None
+        return str(row["login_url"]).strip()
 
 
 def update_platform(platform_id: int, label: Optional[str], active: Optional[bool]) -> Optional[Dict[str, Any]]:

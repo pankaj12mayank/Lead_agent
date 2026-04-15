@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore'
  * API origin: explicit ``VITE_API_URL``, else Vite dev proxy ``/api`` → FastAPI,
  * else production fallback (same host deployments can override at build time).
  */
-function apiBaseURL(): string {
+export function getApiBaseURL(): string {
   const fromEnv = String(import.meta.env.VITE_API_URL ?? '')
     .trim()
     .replace(/\/$/, '')
@@ -16,7 +16,7 @@ function apiBaseURL(): string {
 }
 
 export const api = axios.create({
-  baseURL: apiBaseURL(),
+  baseURL: getApiBaseURL(),
   headers: { 'Content-Type': 'application/json' },
   timeout: 120_000,
 })
@@ -33,6 +33,9 @@ api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response?.status === 401) {
+      if (window.location.pathname.startsWith('/admin')) {
+        return Promise.reject(err)
+      }
       useAuthStore.getState().logout()
       if (!window.location.pathname.startsWith('/login')) {
         try {

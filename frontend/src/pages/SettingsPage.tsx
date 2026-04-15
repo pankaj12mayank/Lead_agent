@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { getSettings, patchSettings } from '@/lib/api/settings'
+import { getSettings, patchSettings, testExternalApiConnection, testOllamaConnection } from '@/lib/api/settings'
 import type { AppSettings } from '@/types/models'
 
 const MODEL_PRESETS = [
@@ -25,6 +25,15 @@ export function SettingsPage() {
   const [modelCustom, setModelCustom] = useState('')
   const [useOllama, setUseOllama] = useState(true)
   const [freeApi, setFreeApi] = useState(false)
+  const [aiProvider, setAiProvider] = useState<'ollama' | 'external_api'>('ollama')
+  const [extBaseUrl, setExtBaseUrl] = useState('')
+  const [extApiKey, setExtApiKey] = useState('')
+  const [extModel, setExtModel] = useState('gpt-4o-mini')
+  const [ollamaTestMsg, setOllamaTestMsg] = useState<string | null>(null)
+  const [ollamaTestHints, setOllamaTestHints] = useState<string[] | null>(null)
+  const [extTestMsg, setExtTestMsg] = useState<string | null>(null)
+  const [ollamaTestBusy, setOllamaTestBusy] = useState(false)
+  const [extTestBusy, setExtTestBusy] = useState(false)
   const [delayMin, setDelayMin] = useState(3)
   const [delayMax, setDelayMax] = useState(5)
   const [maxLeads, setMaxLeads] = useState(20)
@@ -51,6 +60,12 @@ export function SettingsPage() {
           }
           setUseOllama(boolish(s.use_ollama, true))
           setFreeApi(boolish(s.free_api_mode, false))
+          const prov = str(s.ai_provider).toLowerCase()
+          setAiProvider(prov === 'external_api' ? 'external_api' : 'ollama')
+          setExtBaseUrl(str(s.external_api_base_url) || 'https://api.openai.com/v1/chat/completions')
+          const ek = str(s.external_api_key)
+          setExtApiKey(ek.includes('*') || ek.startsWith('…') ? '' : ek)
+          setExtModel(str(s.external_api_model) || 'gpt-4o-mini')
           setDelayMin(Number(s.scraper_delay_min_seconds ?? 3) || 3)
           setDelayMax(Number(s.scraper_delay_max_seconds ?? 5) || 5)
           setMaxLeads(Number(s.scraper_max_leads_default ?? 20) || 20)
@@ -72,16 +87,23 @@ export function SettingsPage() {
     setBusy(true)
     try {
       const modelName = modelPreset === 'custom' ? modelCustom.trim() : modelPreset
-      const next = await patchSettings({
+      const patch: Record<string, unknown> = {
         model_name: modelName || undefined,
         use_ollama: useOllama ? 'true' : 'false',
         free_api_mode: freeApi ? 'true' : 'false',
+        ai_provider: aiProvider,
+        external_api_base_url: extBaseUrl.trim() || undefined,
+        external_api_model: extModel.trim() || undefined,
         scraper_delay_min_seconds: delayMin,
         scraper_delay_max_seconds: delayMax,
         scraper_max_leads_default: maxLeads,
         exports_dir: exportsDir.trim() || undefined,
         notes: notes || undefined,
-      })
+      }
+      if (extApiKey.trim()) {
+        patch.external_api_key = extApiKey.trim()
+      }
+      const next = await patchSettings(patch as AppSettings)
       setSettings(next)
       setMsg('Settings saved successfully.')
     } catch {
@@ -105,61 +127,204 @@ export function SettingsPage() {
         <section className="rounded-2xl border border-surface-border bg-premium-card-light p-8 shadow-card dark:bg-premium-card-dark">
           <h2 className="type-panel-title mb-2">AI message configuration</h2>
           <p className="text-xs leading-relaxed text-ink-muted">
-            Controls how outreach messages are generated for sales teams using your connected model runtime.
+            Choose how outreach messages are generated. Ollama uses your local or hosted Ollama runtime; API uses an
+            OpenAI-compatible HTTPS endpoint.
           </p>
-          <div className="mt-6 space-y-5">
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="preset">
-                Model preset
-              </label>
-              <select
-                id="preset"
-                value={modelPreset}
-                onChange={(e) => setModelPreset(e.target.value)}
-                className="field-input mt-2"
-              >
-                {MODEL_PRESETS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {modelPreset === 'custom' ? (
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="custom">
-                  Custom model tag
-                </label>
-                <input
-                  id="custom"
-                  value={modelCustom}
-                  onChange={(e) => setModelCustom(e.target.value)}
-                  className="field-input mt-2"
-                  placeholder="e.g. llama3:latest"
-                />
-              </div>
-            ) : null}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-field/60 px-4 py-3 dark:bg-zinc-900/40">
+
+          <div className="mt-6 flex flex-wrap gap-2 rounded-xl border border-surface-border bg-field/40 p-1 dark:bg-zinc-900/40">
+            <button
+              type="button"
+              onClick={() => setAiProvider('ollama')}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                aiProvider === 'ollama'
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-sm'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              Ollama
+            </button>
+            <button
+              type="button"
+              onClick={() => setAiProvider('external_api')}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                aiProvider === 'external_api'
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-sm'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              External API
+            </button>
+          </div>
+
+          <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-field/60 px-4 py-3 dark:bg-zinc-900/40">
+            <input
+              type="checkbox"
+              checked={freeApi}
+              onChange={(e) => setFreeApi(e.target.checked)}
+              className="h-4 w-4 rounded border-surface-border bg-field text-amber-700 accent-amber-600 focus:ring-amber-500/30 dark:text-amber-400"
+            />
+            <span className="text-sm text-ink-muted">Free API mode (skip all model calls — templates only)</span>
+          </label>
+
+          {aiProvider === 'ollama' ? (
+            <div className="mt-6 space-y-5">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-field/60 px-4 py-3 dark:bg-zinc-900/40">
                 <input
                   type="checkbox"
                   checked={useOllama}
                   onChange={(e) => setUseOllama(e.target.checked)}
                   className="h-4 w-4 rounded border-surface-border bg-field text-amber-700 accent-amber-600 focus:ring-amber-500/30 dark:text-amber-400"
                 />
-                <span className="text-sm text-ink-muted">Use Ollama for AI message generation</span>
+                <span className="text-sm text-ink-muted">Enable Ollama path when not in free API mode</span>
               </label>
-              <label className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-surface-border bg-field/60 px-4 py-3 dark:bg-zinc-900/40">
-                <input
-                  type="checkbox"
-                  checked={freeApi}
-                  onChange={(e) => setFreeApi(e.target.checked)}
-                  className="h-4 w-4 rounded border-surface-border bg-field text-amber-700 accent-amber-600 focus:ring-amber-500/30 dark:text-amber-400"
-                />
-                <span className="text-sm text-ink-muted">Free API mode (skip model generation)</span>
-              </label>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="preset">
+                  Model preset
+                </label>
+                <select
+                  id="preset"
+                  value={modelPreset}
+                  onChange={(e) => setModelPreset(e.target.value)}
+                  className="field-input mt-2"
+                >
+                  {MODEL_PRESETS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {modelPreset === 'custom' ? (
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="custom">
+                    Custom model tag
+                  </label>
+                  <input
+                    id="custom"
+                    value={modelCustom}
+                    onChange={(e) => setModelCustom(e.target.value)}
+                    className="field-input mt-2"
+                    placeholder="e.g. llama3:latest"
+                  />
+                </div>
+              ) : null}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={ollamaTestBusy}
+                    onClick={async () => {
+                      setOllamaTestMsg(null)
+                      setOllamaTestHints(null)
+                      setOllamaTestBusy(true)
+                      try {
+                        const modelName = modelPreset === 'custom' ? modelCustom.trim() : modelPreset
+                        const r = await testOllamaConnection(modelName || undefined)
+                        const sample =
+                          r.available_sample?.length && !r.ok
+                            ? ` — installed models include e.g. ${r.available_sample.join(', ')}`
+                            : ''
+                        setOllamaTestMsg(
+                          r.ok
+                            ? `${r.auto_started ? 'Ollama was started in the background; ' : ''}Connected: ${r.detail || 'OK'}`
+                            : `Check failed: ${r.detail || 'Unknown'}${sample}`,
+                        )
+                        setOllamaTestHints(r.hints?.length ? r.hints : null)
+                      } catch {
+                        setOllamaTestMsg('Test request failed.')
+                        setOllamaTestHints(null)
+                      } finally {
+                        setOllamaTestBusy(false)
+                      }
+                    }}
+                    className="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-muted transition hover:border-amber-500/30 hover:text-ink disabled:opacity-50"
+                  >
+                    {ollamaTestBusy ? 'Testing…' : 'Test Ollama connection'}
+                  </button>
+                  {ollamaTestBusy ? (
+                    <span className="text-xs text-ink-muted">
+                      Checking the API, and if needed starting `ollama serve` or pulling the model (can take a few minutes).
+                    </span>
+                  ) : null}
+                </div>
+                {ollamaTestMsg ? <p className="text-xs text-ink-muted">{ollamaTestMsg}</p> : null}
+                {ollamaTestHints?.length ? (
+                  <ul className="max-w-2xl list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-ink-muted">
+                    {ollamaTestHints.map((h, i) => (
+                      <li key={i}>{h}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="ext-url">
+                  Chat completions URL
+                </label>
+                <input
+                  id="ext-url"
+                  value={extBaseUrl}
+                  onChange={(e) => setExtBaseUrl(e.target.value)}
+                  className="field-input mt-2 font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="ext-key">
+                  API key
+                </label>
+                <input
+                  id="ext-key"
+                  type="password"
+                  autoComplete="off"
+                  value={extApiKey}
+                  onChange={(e) => setExtApiKey(e.target.value)}
+                  className="field-input mt-2"
+                  placeholder="sk-… or service key"
+                />
+                <p className="mt-1 text-[11px] text-ink-subtle">Leave blank when saving to keep the existing key.</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="ext-model">
+                  Model name
+                </label>
+                <input
+                  id="ext-model"
+                  value={extModel}
+                  onChange={(e) => setExtModel(e.target.value)}
+                  className="field-input mt-2"
+                  placeholder="gpt-4o-mini"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  disabled={extTestBusy}
+                  onClick={async () => {
+                    setExtTestMsg(null)
+                    setExtTestBusy(true)
+                    try {
+                      const r = await testExternalApiConnection({
+                        api_key: extApiKey.trim() || undefined,
+                        base_url: extBaseUrl.trim() || undefined,
+                        model: extModel.trim() || undefined,
+                      })
+                      setExtTestMsg(r.ok ? `Connected: ${r.detail || 'OK'}` : `Failed: ${r.detail || 'Unknown'}`)
+                    } catch {
+                      setExtTestMsg('Test request failed.')
+                    } finally {
+                      setExtTestBusy(false)
+                    }
+                  }}
+                  className="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-muted transition hover:border-amber-500/30 hover:text-ink disabled:opacity-50"
+                >
+                  {extTestBusy ? 'Testing…' : 'Test API connection'}
+                </button>
+                {extTestMsg ? <span className="text-xs text-ink-muted">{extTestMsg}</span> : null}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="rounded-2xl border border-surface-border bg-premium-card-light p-8 shadow-card dark:bg-premium-card-dark">

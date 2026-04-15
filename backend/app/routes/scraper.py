@@ -20,10 +20,24 @@ from backend.scraper.progress import create_job, eta_seconds, fail_job, get_job,
 from backend.scraper.registry import list_platform_slugs
 from backend.scraper.runner import run_scrape_sync
 from backend.scraper.session_manager import SessionManager
-from backend.scraper.urls import supported_platforms
+from backend.scraper.urls import LOGIN_START_URLS, login_url, supported_platforms
+from services import platform_registry_service
+from services.platform_channels import active_channel_slugs
 import config as app_config
 
 router = APIRouter(prefix="/scraper", tags=["scraper"])
+
+
+def _resolve_manual_login_url(slug: str) -> str:
+    if slug in LOGIN_START_URLS:
+        return login_url(slug)
+    u = platform_registry_service.get_custom_login_url(slug)
+    if u:
+        return u
+    raise HTTPException(
+        status_code=400,
+        detail="Add this custom platform with a sign-in URL before connecting.",
+    )
 
 
 def _result_to_public(r: ScraperRunResult) -> Dict[str, Any]:
@@ -151,11 +165,13 @@ async def manual_login_window(
 ) -> Dict[str, Any]:
     """Open a real browser window; user logs in manually; session is saved under ``sessions/``."""
     slug = platform.strip().lower().replace(" ", "_")
+    start = _resolve_manual_login_url(slug)
     try:
         await asyncio.to_thread(
             SessionManager().open_login_window,
             slug,
             int(body.wait_seconds * 1000),
+            start,
         )
     except UnsupportedPlatformError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -168,7 +184,38 @@ async def manual_login_window(
 def session_exists(platform: str, _user: dict = Depends(get_current_user)) -> Dict[str, Any]:
     slug = platform.strip().lower().replace(" ", "_")
     sm = SessionManager()
-    return {"platform": slug, "has_session": sm.has_session(slug), "path": str(sm.path_for(slug))}
+    connected = sm.session_connected(slug)
+    return {
+        "platform": slug,
+        "has_session": connected,
+        "has_profile": sm.has_session(slug),
+        "connected": connected,
+        "path": str(sm.path_for(slug)),
+    }
+
+
+@router.post("/sessions/{platform}/verify")
+def verify_one_session(platform: str, _user: dict = Depends(get_current_user)) -> Dict[str, Any]:
+    from backend.scraper.session_verify import verify_playwright_session
+
+    slug = platform.strip().lower().replace(" ", "_")
+    sm = SessionManager()
+    ok = verify_playwright_session(slug, custom_login_url=platform_registry_service.get_custom_login_url(slug))
+    sm.write_verification(slug, ok)
+    return {"platform": slug, "connected": ok, "has_profile": sm.has_session(slug)}
+
+
+@router.post("/sessions/verify-all")
+def verify_all_sessions(_user: dict = Depends(get_current_user)) -> Dict[str, Any]:
+    from backend.scraper.session_verify import verify_playwright_session
+
+    sm = SessionManager()
+    results: Dict[str, Any] = {}
+    for slug in active_channel_slugs():
+        ok = verify_playwright_session(slug, custom_login_url=platform_registry_service.get_custom_login_url(slug))
+        sm.write_verification(slug, ok)
+        results[slug] = {"connected": ok, "has_profile": sm.has_session(slug)}
+    return {"ok": True, "results": results}
 
 
 @router.post("/run")

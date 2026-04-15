@@ -1,21 +1,28 @@
 import { KeyRound, Loader2, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-
 import { Modal } from '@/components/ui/Modal'
-import { fetchScraperStatus, fetchSession, openManualLogin, runScraper, type ScraperStatus } from '@/lib/api/scraper'
-import { createPlatform, deletePlatform, listPlatforms } from '@/lib/api/platforms'
-import { SEO_FOOTER_LINKS } from '@/lib/copy/appCopy'
+import {
+  fetchScraperStatus,
+  openManualLogin,
+  runScraper,
+  verifyAllSessions,
+  type ScraperStatus,
+} from '@/lib/api/scraper'
+import {
+  createPlatform,
+  deletePlatform,
+  listPlatforms,
+  patchBuiltinActive,
+  patchCustomPlatform,
+} from '@/lib/api/platforms'
 import { cn } from '@/lib/utils/cn'
 import type { PlatformRow } from '@/types/models'
-
-type SessionMap = Record<string, { has_session: boolean; path: string }>
 
 export function PlatformsPage() {
   const [rows, setRows] = useState<PlatformRow[]>([])
   const [scraper, setScraper] = useState<ScraperStatus | null>(null)
-  const [sessions, setSessions] = useState<SessionMap>({})
   const [loading, setLoading] = useState(true)
+  const [refreshBusy, setRefreshBusy] = useState(false)
   const [busySlug, setBusySlug] = useState<string | null>(null)
   const [runOpen, setRunOpen] = useState(false)
   const [runPlatform, setRunPlatform] = useState('')
@@ -27,6 +34,7 @@ export function PlatformsPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [addSlug, setAddSlug] = useState('')
   const [addLabel, setAddLabel] = useState('')
+  const [addLoginUrl, setAddLoginUrl] = useState('')
   const [addBusy, setAddBusy] = useState(false)
   const [addErr, setAddErr] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PlatformRow | null>(null)
@@ -39,18 +47,6 @@ export function PlatformsPage() {
       const [plats, st] = await Promise.all([listPlatforms(), fetchScraperStatus()])
       setRows(plats)
       setScraper(st)
-      const map: SessionMap = {}
-      await Promise.all(
-        plats.map(async (p) => {
-          try {
-            const s = await fetchSession(p.slug)
-            map[p.slug] = { has_session: s.has_session, path: s.path }
-          } catch {
-            map[p.slug] = { has_session: false, path: '' }
-          }
-        }),
-      )
-      setSessions(map)
     } finally {
       setLoading(false)
     }
@@ -80,20 +76,49 @@ export function PlatformsPage() {
     }
   }
 
+  async function onRefreshSessions() {
+    setRefreshBusy(true)
+    try {
+      await verifyAllSessions()
+      await load()
+    } finally {
+      setRefreshBusy(false)
+    }
+  }
+
+  async function onToggleChannel(p: PlatformRow, next: boolean) {
+    try {
+      if (p.builtin) {
+        await patchBuiltinActive(p.slug, next)
+      } else if (p.platform_id != null) {
+        await patchCustomPlatform(p.platform_id, { active: next })
+      }
+      await load()
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function onAddPlatform() {
     setAddErr(null)
     const slug = addSlug.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
     const label = addLabel.trim()
+    const loginUrl = addLoginUrl.trim()
     if (!slug || !label) {
       setAddErr('Enter a short slug (letters, numbers, underscores) and a display name.')
       return
     }
+    if (!loginUrl.startsWith('http')) {
+      setAddErr('Enter a valid sign-in page URL (https://…) where users log in to this source.')
+      return
+    }
     setAddBusy(true)
     try {
-      await createPlatform({ slug, label })
+      await createPlatform({ slug, label, login_url: loginUrl })
       setAddOpen(false)
       setAddSlug('')
       setAddLabel('')
+      setAddLoginUrl('')
       await load()
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } }
@@ -163,14 +188,24 @@ export function PlatformsPage() {
           </span>
           .
         </p>
-        <button
-          type="button"
-          onClick={() => load()}
-          className="inline-flex items-center gap-2 rounded-xl border border-surface-border px-4 py-2 text-sm text-ink-muted transition hover:border-amber-500/30 hover:text-ink"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh status
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={refreshBusy}
+            onClick={() => void onRefreshSessions()}
+            className="inline-flex items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:border-amber-500/50 disabled:opacity-50 dark:text-amber-200"
+          >
+            {refreshBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh · verify logins
+          </button>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="inline-flex items-center gap-2 rounded-xl border border-surface-border px-4 py-2 text-sm text-ink-muted transition hover:border-amber-500/30 hover:text-ink"
+          >
+            Reload list
+          </button>
+        </div>
       </section>
 
       <section className="space-y-4">
@@ -188,6 +223,7 @@ export function PlatformsPage() {
               setAddErr(null)
               setAddSlug('')
               setAddLabel('')
+              setAddLoginUrl('')
               setAddOpen(true)
             }}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-amber-500/25 transition hover:from-amber-500 hover:to-amber-600 dark:from-amber-500 dark:to-amber-600"
@@ -198,12 +234,16 @@ export function PlatformsPage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {rows.map((p) => {
-          const sess = sessions[p.slug]
-          const loggedIn = !!sess?.has_session
+          const loggedIn = !!p.session_connected
+          const hasProfile = !!p.session_profile
+          const inactive = !p.active
           return (
             <div
               key={p.slug}
-              className="flex flex-col rounded-2xl border border-surface-border bg-premium-card-light p-6 shadow-card transition hover:border-amber-500/20 dark:bg-premium-card-dark dark:hover:border-amber-400/15"
+              className={cn(
+                'flex flex-col rounded-2xl border border-surface-border bg-premium-card-light p-6 shadow-card transition hover:border-amber-500/20 dark:bg-premium-card-dark dark:hover:border-amber-400/15',
+                inactive && 'opacity-60',
+              )}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -216,27 +256,67 @@ export function PlatformsPage() {
                     p.active ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-500',
                   )}
                 >
-                  {p.active ? 'Active' : 'Off'}
+                  {p.active ? 'Channel on' : 'Channel off'}
                 </span>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-surface-border bg-field/40 px-3 py-2.5 dark:bg-zinc-900/30">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-ink">Workspace channel</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-ink-muted">
+                    Search, filters, and scraper use enabled channels only.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={p.active}
+                  aria-label={p.active ? 'Turn channel off' : 'Turn channel on'}
+                  onClick={() => void onToggleChannel(p, !p.active)}
+                  className={cn(
+                    'relative h-7 w-12 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-premium-card-light dark:focus-visible:ring-offset-premium-card-dark',
+                    p.active ? 'bg-emerald-600' : 'bg-zinc-300 dark:bg-zinc-600',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 left-0.5 block h-6 w-6 rounded-full bg-white shadow-md ring-1 ring-black/5 transition-transform duration-200 ease-out',
+                      p.active ? 'translate-x-5' : 'translate-x-0',
+                    )}
+                  />
+                </button>
               </div>
               <dl className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between gap-2">
-                  <dt className="text-ink-muted">Platform session</dt>
-                  <dd className={loggedIn ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-200'}>
-                    {loggedIn ? 'Connected' : 'Not connected'}
+                  <dt className="text-ink-muted">Login status</dt>
+                  <dd
+                    className={
+                      loggedIn
+                        ? 'font-medium text-emerald-700 dark:text-emerald-300'
+                        : hasProfile
+                          ? 'text-amber-700 dark:text-amber-200'
+                          : 'text-ink-muted'
+                    }
+                  >
+                    {loggedIn ? 'Connected' : hasProfile ? 'Profile saved — not verified' : 'Not connected'}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-ink-muted">Built-in connector</dt>
                   <dd className="text-ink-muted">{p.builtin ? 'Yes' : 'No'}</dd>
                 </div>
+                {p.login_url ? (
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="text-ink-muted">Sign-in URL</dt>
+                    <dd className="break-all font-mono text-[11px] text-ink-subtle">{p.login_url}</dd>
+                  </div>
+                ) : null}
               </dl>
               <div className="mt-6 flex flex-col gap-2">
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => onManualLogin(p.slug)}
-                    disabled={busySlug === p.slug}
+                    disabled={busySlug === p.slug || inactive}
                     className="inline-flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-surface-border bg-field/80 px-3 py-2.5 text-xs font-semibold text-ink transition hover:border-amber-500/30 disabled:opacity-50 dark:bg-zinc-900/50"
                   >
                     {busySlug === p.slug ? (
@@ -248,13 +328,14 @@ export function PlatformsPage() {
                   </button>
                   <button
                     type="button"
+                    disabled={inactive}
                     onClick={() => {
                       setRunPlatform(p.slug)
                       setKeyword('')
                       setRunMsg(null)
                       setRunOpen(true)
                     }}
-                    className="inline-flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm ring-1 ring-amber-500/25 transition hover:from-amber-500 hover:to-amber-600 dark:from-amber-500 dark:to-amber-600"
+                    className="inline-flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm ring-1 ring-amber-500/25 transition hover:from-amber-500 hover:to-amber-600 disabled:opacity-50 dark:from-amber-500 dark:to-amber-600"
                   >
                     <Play className="h-4 w-4" />
                     Start Lead Search
@@ -317,6 +398,22 @@ export function PlatformsPage() {
               placeholder="e.g. Custom Directory"
             />
           </div>
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="add-platform-login">
+              Website sign-in URL
+            </label>
+            <input
+              id="add-platform-login"
+              value={addLoginUrl}
+              onChange={(e) => setAddLoginUrl(e.target.value)}
+              className="field-input mt-1 font-mono text-sm"
+              placeholder="https://example.com/login"
+              autoComplete="off"
+            />
+            <p className="mt-1 text-[11px] text-ink-subtle">
+              Connect Platform opens this URL so the account can be linked after successful login.
+            </p>
+          </div>
           {addErr ? (
             <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-800 dark:text-red-200">
               {addErr}
@@ -333,7 +430,7 @@ export function PlatformsPage() {
             </button>
             <button
               type="button"
-              disabled={addBusy || !addSlug.trim() || !addLabel.trim()}
+              disabled={addBusy || !addSlug.trim() || !addLabel.trim() || !addLoginUrl.trim()}
               onClick={() => void onAddPlatform()}
               className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
             >
@@ -449,21 +546,6 @@ export function PlatformsPage() {
           </div>
         </div>
       </Modal>
-
-      <section className="rounded-2xl border border-surface-border bg-premium-card-light p-6 shadow-card dark:bg-premium-card-dark">
-        <h2 className="type-section-heading mb-4">Product topics</h2>
-        <nav className="flex flex-wrap gap-x-6 gap-y-3" aria-label="Product topics">
-          {SEO_FOOTER_LINKS.map(({ to, label }) => (
-            <Link
-              key={`${to}-${label}`}
-              to={to}
-              className="text-sm text-ink-muted underline-offset-4 transition hover:text-ink hover:underline"
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </section>
     </div>
   )
 }

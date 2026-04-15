@@ -81,12 +81,13 @@ export function SearchLeadsPage() {
     setLoadingMeta(true)
     try {
       const [plats, st] = await Promise.all([listPlatforms(), fetchScraperStatus()])
-      setPlatforms(plats)
+      const active = plats.filter((p) => p.active)
+      setPlatforms(active)
       setScraper(st)
       setLeadLimit(st.max_leads_default)
       setDelayMin(st.delay_seconds_range[0])
       setDelayMax(st.delay_seconds_range[1])
-      setPlatform((prev) => prev || (plats[0]?.slug ?? ''))
+      setPlatform((prev) => (prev && active.some((p) => p.slug === prev) ? prev : active[0]?.slug ?? ''))
     } finally {
       setLoadingMeta(false)
     }
@@ -94,6 +95,12 @@ export function SearchLeadsPage() {
 
   useEffect(() => {
     void loadMeta()
+  }, [loadMeta])
+
+  useEffect(() => {
+    const onCh = () => void loadMeta()
+    window.addEventListener('leadpilot-platforms-changed', onCh)
+    return () => window.removeEventListener('leadpilot-platforms-changed', onCh)
   }, [loadMeta])
 
   useEffect(() => {

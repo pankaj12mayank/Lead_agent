@@ -75,5 +75,19 @@ def init_meta_schema() -> None:
                 sent_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_email_history_lead ON email_history(lead_id);
+
+            CREATE TABLE IF NOT EXISTS platform_builtin_overrides (
+                slug TEXT PRIMARY KEY,
+                active INTEGER NOT NULL DEFAULT 1
+            );
             """
         )
+        _migrate_meta_schema(cx)
+
+
+def _migrate_meta_schema(cx: sqlite3.Connection) -> None:
+    """Lightweight SQLite migrations (additive columns / tables)."""
+    cur = cx.execute("PRAGMA table_info(platforms)")
+    cols = {str(r[1]) for r in cur.fetchall()}
+    if "login_url" not in cols:
+        cx.execute("ALTER TABLE platforms ADD COLUMN login_url TEXT")

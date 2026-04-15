@@ -1,8 +1,12 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Always load ``LeadPilot/.env`` (next to this file), not only cwd — fixes admin env when API is started from another folder.
+_REPO_ROOT = Path(__file__).resolve().parent
+load_dotenv(_REPO_ROOT / ".env")
+load_dotenv()  # optional: cwd .env overrides for local experiments
 
 DEBUG = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").strip() or "INFO"
@@ -37,14 +41,23 @@ JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))  # default 7 
 
 API_META_DB_PATH = os.getenv("API_META_DB_PATH", "database/api_meta.db")
 
+# Admin console (separate from app users). Set both to enable /admin login.
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
+
 # Monorepo paths (CSV exports, Playwright session state, app logs)
 EXPORTS_DIR = os.getenv("EXPORTS_DIR", "exports").strip() or "exports"
 SESSIONS_DIR = os.getenv("SESSIONS_DIR", "sessions").strip() or "sessions"
 LOGS_DIR = os.getenv("LOGS_DIR", "logs").strip() or "logs"
 
+# Uploaded logo / favicon (served at ``/branding/*``)
+BRANDING_UPLOAD_DIR = os.getenv("BRANDING_UPLOAD_DIR", str(_REPO_ROOT / "storage" / "branding")).strip() or str(
+    _REPO_ROOT / "storage" / "branding"
+)
+
 
 def ensure_data_dirs() -> None:
-    for d in (EXPORTS_DIR, SESSIONS_DIR, LOGS_DIR):
+    for d in (EXPORTS_DIR, SESSIONS_DIR, LOGS_DIR, BRANDING_UPLOAD_DIR):
         os.makedirs(d, exist_ok=True)
     for p in (SQLITE_DB_PATH, API_META_DB_PATH):
         parent = os.path.dirname(os.path.abspath(p))

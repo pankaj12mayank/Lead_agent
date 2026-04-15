@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 import config
 from backend.app.logging_config import setup_logging
 from backend.app.middleware.error_handlers import register_exception_handlers
 from backend.app.routes import (
+    admin,
     ai_messages,
     analytics,
     auth,
@@ -17,6 +20,7 @@ from backend.app.routes import (
     leads,
     messages,
     platforms,
+    public,
     scraper,
     settings_routes,
     tools,
@@ -58,6 +62,8 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(public.router)
+app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(messages.router)
@@ -68,3 +74,7 @@ app.include_router(analytics.router)
 app.include_router(exports.router)
 app.include_router(scraper.router)
 app.include_router(tools.router)
+
+_branding_dir = Path(config.BRANDING_UPLOAD_DIR)
+_branding_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/branding", StaticFiles(directory=str(_branding_dir)), name="branding")

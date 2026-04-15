@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import bcrypt
 from sqlalchemy import select
@@ -85,3 +85,13 @@ def authenticate(email: str, password: str) -> Optional[Dict[str, Any]]:
     if not verify_password(password, row["password_hash"]):
         return None
     return get_user_by_id(row["id"])
+
+
+def list_users() -> List[Dict[str, Any]]:
+    Session = get_session_factory()
+    db = Session()
+    try:
+        rows = db.scalars(select(User).order_by(User.created_at.desc())).all()
+        return [{"id": u.id, "email": u.email, "created_at": u.created_at} for u in rows]
+    finally:
+        db.close()
