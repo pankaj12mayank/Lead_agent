@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { Badge, StatusBadge } from '@/components/ui/Badge'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Modal } from '@/components/ui/Modal'
 import {
   bulkDeleteLeads,
@@ -46,6 +47,11 @@ const LEAD_STATUSES = [
   'ready',
   'converted',
 ] as const
+
+const PIPELINE_STATUS_SELECT_OPTIONS = LEAD_STATUSES.map((s) => ({
+  value: s,
+  label: leadStatusLabel(s),
+}))
 
 const columnHelper = createColumnHelper<Lead>()
 
@@ -178,6 +184,34 @@ export function LeadsPage() {
       setPlatform('')
     }
   }, [filters.platform, platformChoices, setPlatform])
+
+  const tierFilterOptions = useMemo(
+    () => [
+      { value: '', label: 'All tiers' },
+      { value: 'hot', label: 'Hot' },
+      { value: 'warm', label: 'Warm' },
+      { value: 'cold', label: 'Cold' },
+    ],
+    [],
+  )
+
+  const statusFilterOptions = useMemo(
+    () => [{ value: '', label: 'All statuses' }, ...PIPELINE_STATUS_SELECT_OPTIONS],
+    [],
+  )
+
+  const platformFilterOptions = useMemo(
+    () => [
+      { value: '', label: 'All sources' },
+      ...platformChoices.map((p) => ({ value: p.slug, label: `${p.label} (${p.slug})` })),
+    ],
+    [platformChoices],
+  )
+
+  const pageSizeOptions = useMemo(
+    () => [10, 25, 50, 100, 200].map((n) => ({ value: String(n), label: `${n} / page` })),
+    [],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -350,17 +384,14 @@ export function LeadsPage() {
         cell: ({ row }) => (
           <div className="flex min-w-[140px] max-w-[200px] flex-col gap-1.5">
             <StatusBadge status={row.original.status || 'new'} />
-            <select
+            <FilterSelect
+              size="sm"
+              className="w-full min-w-0"
+              options={PIPELINE_STATUS_SELECT_OPTIONS}
               value={row.original.status || 'new'}
-              onChange={(e) => onStatusChange(row.original, e.target.value)}
-              className="w-full cursor-pointer rounded-lg border border-surface-border bg-field px-2 py-1.5 text-xs text-ink outline-none transition hover:border-amber-500/30 focus:border-amber-500/50"
-            >
-              {LEAD_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {leadStatusLabel(s)}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => void onStatusChange(row.original, v)}
+              aria-label="Change pipeline status"
+            />
           </div>
         ),
       }),
@@ -571,53 +602,37 @@ export function LeadsPage() {
               <label htmlFor="leads-tier" className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
                 Tier
               </label>
-              <select
+              <FilterSelect
                 id="leads-tier"
+                options={tierFilterOptions}
                 value={filters.tier}
-                onChange={(e) => setTier(e.target.value)}
-                className="field-input rounded-xl py-2.5 text-sm"
-              >
-                <option value="">All tiers</option>
-                <option value="hot">Hot</option>
-                <option value="warm">Warm</option>
-                <option value="cold">Cold</option>
-              </select>
+                onChange={setTier}
+                placeholder="All tiers"
+              />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="leads-platform" className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
                 Lead source
               </label>
-              <select
+              <FilterSelect
                 id="leads-platform"
+                options={platformFilterOptions}
                 value={filters.platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                className="field-input rounded-xl py-2.5 text-sm"
-              >
-                <option value="">All sources</option>
-                {platformChoices.map((p) => (
-                  <option key={p.slug} value={p.slug}>
-                    {p.label} ({p.slug})
-                  </option>
-                ))}
-              </select>
+                onChange={setPlatform}
+                placeholder="All sources"
+              />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="leads-status" className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
                 Pipeline status
               </label>
-              <select
+              <FilterSelect
                 id="leads-status"
+                options={statusFilterOptions}
                 value={filters.status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="field-input rounded-xl py-2.5 text-sm"
-              >
-                <option value="">All statuses</option>
-                {LEAD_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {leadStatusLabel(s)}
-                  </option>
-                ))}
-              </select>
+                onChange={setStatus}
+                placeholder="All statuses"
+              />
             </div>
           </div>
         </div>
@@ -702,19 +717,14 @@ export function LeadsPage() {
             {pagination.pageIndex * pagination.pageSize + rows.length} of {total}
           </div>
           <div className="flex items-center gap-2">
-            <select
-              value={pagination.pageSize}
-              onChange={(e) =>
-                setPagination({ pageIndex: 0, pageSize: Number(e.target.value) || 25 })
-              }
-              className="rounded-lg border border-surface-border bg-field px-2 py-1 text-ink-muted"
-            >
-              {[10, 25, 50, 100, 200].map((n) => (
-                <option key={n} value={n}>
-                  {n} / page
-                </option>
-              ))}
-            </select>
+            <FilterSelect
+              size="sm"
+              className="w-[118px]"
+              options={pageSizeOptions}
+              value={String(pagination.pageSize)}
+              onChange={(v) => setPagination({ pageIndex: 0, pageSize: Number(v) || 25 })}
+              aria-label="Rows per page"
+            />
             <button
               type="button"
               className="rounded-lg border border-surface-border p-1.5 text-ink-muted transition hover:border-amber-500/25 hover:text-ink disabled:opacity-30"
@@ -747,17 +757,14 @@ export function LeadsPage() {
               <span className={cn('rounded-full border border-surface-border px-2 py-0.5 text-xs tabular-nums', scoreTone(Number(modalLead.score)))}>
                 Lead score {Math.round(Number(modalLead.score ?? 0))}
               </span>
-              <select
+              <FilterSelect
+                size="sm"
+                className="min-w-[200px]"
+                options={PIPELINE_STATUS_SELECT_OPTIONS}
                 value={modalLead.status || 'new'}
-                onChange={(e) => void onStatusChange(modalLead, e.target.value)}
-                className="rounded-lg border border-surface-border bg-field px-2 py-1 text-xs text-ink"
-              >
-                {LEAD_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {leadStatusLabel(s)}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => void onStatusChange(modalLead, v)}
+                aria-label="Pipeline status"
+              />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[

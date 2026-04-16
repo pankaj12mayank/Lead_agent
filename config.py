@@ -71,6 +71,8 @@ SCRAPER_DELAY_MAX_SECONDS = float(os.getenv("SCRAPER_DELAY_MAX_SECONDS", "5"))
 SCRAPER_MAX_LEADS_DEFAULT = int(os.getenv("SCRAPER_MAX_LEADS_DEFAULT", "20"))
 SCRAPER_MAX_LEADS_HARD_CAP = int(os.getenv("SCRAPER_MAX_LEADS_HARD_CAP", "50"))
 SCRAPER_MANUAL_LOGIN_DEFAULT_SECONDS = int(os.getenv("SCRAPER_MANUAL_LOGIN_DEFAULT_SECONDS", "180"))
+# When ``profile_contact_enrich`` is on, max profiles to open for public mailto/tel (0 disables enrich).
+SCRAPER_PROFILE_ENRICH_CAP = int(os.getenv("SCRAPER_PROFILE_ENRICH_CAP", "8"))
 
 # --- Lead scoring (industry alignment bonus) ---
 SCORING_BENCHMARK_INDUSTRY = os.getenv("SCORING_BENCHMARK_INDUSTRY", "").strip()

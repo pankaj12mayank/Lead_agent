@@ -33,6 +33,8 @@ export type ScraperRunPayload = {
   delay_max_seconds?: number
   max_scroll_rounds?: number
   async_job?: boolean
+  /** LinkedIn: open profiles to read public mailto/tel (slower; capped by server). */
+  profile_contact_enrich?: boolean
 }
 
 export type ScraperRunSyncResult = {
@@ -63,6 +65,8 @@ export type ScraperJobStatus = {
   leads_found: number
   leads_target: number
   duplicates_removed: number
+  max_scroll_rounds?: number
+  delay_avg_seconds?: number
   started_at: number
   updated_at: number
   messages: string[]

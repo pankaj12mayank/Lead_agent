@@ -81,6 +81,10 @@ class ScraperRunBody(BaseModel):
     """When true, returns 202 + ``job_id``; poll ``GET /scraper/jobs/{job_id}`` for live status."""
 
     async_job: bool = False
+    profile_contact_enrich: bool = Field(
+        default=False,
+        description="LinkedIn: after search, open profiles to capture public mailto/tel when visible (slower).",
+    )
 
     @model_validator(mode="after")
     def _lead_limit_alias(self) -> "ScraperRunBody":
@@ -101,6 +105,7 @@ def _cfg_from_body(body: ScraperRunBody) -> ScraperRunConfig:
         delay_max_seconds=body.delay_max_seconds,
         headless=body.headless,
         max_scroll_rounds=body.max_scroll_rounds,
+        profile_contact_enrich=bool(body.profile_contact_enrich),
     )
 
 
@@ -201,8 +206,13 @@ def verify_one_session(platform: str, _user: dict = Depends(get_current_user)) -
     slug = platform.strip().lower().replace(" ", "_")
     sm = SessionManager()
     ok = verify_playwright_session(slug, custom_login_url=platform_registry_service.get_custom_login_url(slug))
-    sm.write_verification(slug, ok)
-    return {"platform": slug, "connected": ok, "has_profile": sm.has_session(slug)}
+    sm.write_verification(slug, ok, connection_source="probe")
+    return {
+        "platform": slug,
+        "connected": sm.session_connected(slug),
+        "probe_ok": ok,
+        "has_profile": sm.has_session(slug),
+    }
 
 
 @router.post("/sessions/verify-all")
@@ -213,8 +223,12 @@ def verify_all_sessions(_user: dict = Depends(get_current_user)) -> Dict[str, An
     results: Dict[str, Any] = {}
     for slug in active_channel_slugs():
         ok = verify_playwright_session(slug, custom_login_url=platform_registry_service.get_custom_login_url(slug))
-        sm.write_verification(slug, ok)
-        results[slug] = {"connected": ok, "has_profile": sm.has_session(slug)}
+        sm.write_verification(slug, ok, connection_source="probe")
+        results[slug] = {
+            "connected": sm.session_connected(slug),
+            "probe_ok": ok,
+            "has_profile": sm.has_session(slug),
+        }
     return {"ok": True, "results": results}
 
 
@@ -233,7 +247,14 @@ async def run_scraper(
 
     if body.async_job:
         job_id = str(uuid.uuid4())
-        create_job(job_id, cfg.platform, int(cfg.max_leads or 20))
+        d_lo, d_hi = cfg.effective_delays()
+        create_job(
+            job_id,
+            cfg.platform,
+            int(cfg.max_leads or 20),
+            max_scroll_rounds=int(cfg.max_scroll_rounds),
+            delay_avg_seconds=(float(d_lo) + float(d_hi)) / 2.0,
+        )
         t = threading.Thread(target=_run_job_thread, args=(job_id, cfg), daemon=True)
         t.start()
         return JSONResponse(

@@ -140,6 +140,76 @@ def get_lead(db: Session, lead_id: str) -> Optional[Lead]:
     return db.get(Lead, lead_id)
 
 
+def _norm_profile_url(url: str) -> str:
+    s = (url or "").strip().rstrip("/")
+    return s.lower() if s else ""
+
+
+def ingest_scrape_rows_into_leads(
+    db: Session,
+    *,
+    platform: str,
+    rows: List[Dict[str, Any]],
+) -> Dict[str, int]:
+    """
+    Insert scraper output into the main ``leads`` table so the CRM list updates.
+
+    Skips rows without a usable LinkedIn profile URL and skips duplicates
+    (same profile URL as an existing lead, case-insensitive).
+    """
+    plat = normalize_platform(platform)
+    created = 0
+    skipped = 0
+    for r in rows:
+        linkedin = str(r.get("linkedin_url") or r.get("url") or "").strip()
+        if not linkedin or "/in/" not in linkedin.lower():
+            skipped += 1
+            continue
+        key = _norm_profile_url(linkedin)
+        if not key:
+            skipped += 1
+            continue
+        dup = db.scalar(
+            select(Lead.id).where(func.lower(func.trim(Lead.linkedin_url)) == key).limit(1)
+        )
+        if dup is not None:
+            skipped += 1
+            continue
+        full_name = (str(r.get("full_name") or "").strip() or "Unknown")[:255]
+        kw = str(r.get("search_keyword") or "").strip()
+        fc = str(r.get("filter_country") or "").strip()
+        fi = str(r.get("filter_industry") or "").strip()
+        fcs = str(r.get("filter_company_size") or "").strip()
+        notes_parts: List[str] = []
+        if kw:
+            notes_parts.append(f"Search: {kw}")
+        if fc:
+            notes_parts.append(f"Location / region: {fc}")
+        if fi:
+            notes_parts.append(f"Industry filter: {fi}")
+        if fcs:
+            notes_parts.append(f"Company size filter: {fcs}")
+        note_body = "\n".join(notes_parts)[:7900]
+        em = str(r.get("email") or "").strip()[:320]
+        ph = str(r.get("phone") or "").strip()[:64]
+        payload: Dict[str, Any] = {
+            "full_name": full_name,
+            "source_platform": plat,
+            "title": (str(r.get("title") or ""))[:4000],
+            "company_name": (str(r.get("company_name") or ""))[:4000],
+            "linkedin_url": linkedin[:4000],
+            "industry": (fi or str(r.get("industry") or ""))[:128],
+            "company_size": (fcs or str(r.get("company_size") or ""))[:64],
+            "location": fc[:255] if fc else (str(r.get("location") or "")[:255]),
+            "email": em,
+            "phone": ph,
+            "notes": note_body,
+        }
+        create_lead(db, payload)
+        created += 1
+    return {"ingested_leads": created, "skipped": skipped}
+
+
 def create_lead(db: Session, data: Dict[str, Any]) -> Lead:
     lid = str(uuid.uuid4())
     now = utc_now_iso()

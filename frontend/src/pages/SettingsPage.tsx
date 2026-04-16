@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { getSettings, patchSettings, testExternalApiConnection, testOllamaConnection } from '@/lib/api/settings'
 import type { AppSettings } from '@/types/models'
 
@@ -181,18 +182,14 @@ export function SettingsPage() {
                 <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted" htmlFor="preset">
                   Model preset
                 </label>
-                <select
+                <FilterSelect
                   id="preset"
+                  className="mt-2"
+                  options={MODEL_PRESETS}
                   value={modelPreset}
-                  onChange={(e) => setModelPreset(e.target.value)}
-                  className="field-input mt-2"
-                >
-                  {MODEL_PRESETS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setModelPreset}
+                  aria-label="Model preset"
+                />
               </div>
               {modelPreset === 'custom' ? (
                 <div>

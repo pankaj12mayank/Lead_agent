@@ -1,10 +1,10 @@
 import { KeyRound, Loader2, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import {
   fetchScraperStatus,
   openManualLogin,
-  runScraper,
   verifyAllSessions,
   type ScraperStatus,
 } from '@/lib/api/scraper'
@@ -19,18 +19,12 @@ import { cn } from '@/lib/utils/cn'
 import type { PlatformRow } from '@/types/models'
 
 export function PlatformsPage() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState<PlatformRow[]>([])
   const [scraper, setScraper] = useState<ScraperStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshBusy, setRefreshBusy] = useState(false)
   const [busySlug, setBusySlug] = useState<string | null>(null)
-  const [runOpen, setRunOpen] = useState(false)
-  const [runPlatform, setRunPlatform] = useState('')
-  const [keyword, setKeyword] = useState('')
-  const [maxLeads, setMaxLeads] = useState(20)
-  const [delayMin, setDelayMin] = useState(3)
-  const [delayMax, setDelayMax] = useState(5)
-  const [runMsg, setRunMsg] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [addSlug, setAddSlug] = useState('')
   const [addLabel, setAddLabel] = useState('')
@@ -55,14 +49,6 @@ export function PlatformsPage() {
   useEffect(() => {
     void load()
   }, [load])
-
-  useEffect(() => {
-    if (scraper) {
-      setMaxLeads(scraper.max_leads_default)
-      setDelayMin(scraper.delay_seconds_range[0])
-      setDelayMax(scraper.delay_seconds_range[1])
-    }
-  }, [scraper])
 
   async function onManualLogin(slug: string) {
     setBusySlug(slug)
@@ -140,29 +126,6 @@ export function PlatformsPage() {
       setDeleteErr('Could not remove this platform. Try again.')
     } finally {
       setDeleteBusy(false)
-    }
-  }
-
-  async function onRun() {
-    setRunMsg(null)
-    setBusySlug(runPlatform)
-    try {
-      const res = await runScraper({
-        platform: runPlatform,
-        keyword: keyword.trim(),
-        max_leads: maxLeads,
-        delay_min_seconds: delayMin,
-        delay_max_seconds: delayMax,
-        headless: true,
-      })
-      setRunMsg(`Run finished: ${JSON.stringify(res).slice(0, 400)}…`)
-      setRunOpen(false)
-      await load()
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } } }
-      setRunMsg(err.response?.data?.detail || 'Lead search could not be completed. Verify session access and try again.')
-    } finally {
-      setBusySlug(null)
     }
   }
 
@@ -329,12 +292,7 @@ export function PlatformsPage() {
                   <button
                     type="button"
                     disabled={inactive}
-                    onClick={() => {
-                      setRunPlatform(p.slug)
-                      setKeyword('')
-                      setRunMsg(null)
-                      setRunOpen(true)
-                    }}
+                    onClick={() => navigate('/search-leads', { state: { platform: p.slug } })}
                     className="inline-flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm ring-1 ring-amber-500/25 transition hover:from-amber-500 hover:to-amber-600 disabled:opacity-50 dark:from-amber-500 dark:to-amber-600"
                   >
                     <Play className="h-4 w-4" />
@@ -360,12 +318,6 @@ export function PlatformsPage() {
         })}
         </div>
       </section>
-
-      {runMsg ? (
-        <div className="rounded-xl border border-surface-border bg-surface-raised/80 px-4 py-3 text-xs text-ink-muted dark:bg-zinc-900/40">
-          {runMsg}
-        </div>
-      ) : null}
 
       <Modal open={addOpen} title="Add platform" onClose={() => !addBusy && setAddOpen(false)}>
         <div className="space-y-4 text-sm">
@@ -477,75 +429,6 @@ export function PlatformsPage() {
         </div>
       </Modal>
 
-      <Modal open={runOpen} title="Scraping activity" onClose={() => setRunOpen(false)}>
-        <div className="space-y-4 text-sm">
-          <p className="text-ink-muted">
-            Platform <span className="font-mono text-amber-800 dark:text-amber-300">{runPlatform}</span>. A saved
-            platform session is required before starting lead collection.
-          </p>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Search keyword</label>
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              className="field-input mt-1"
-              placeholder="Role, industry, or company focus"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Lead limit</label>
-              <input
-                type="number"
-                min={1}
-                max={scraper.max_leads_cap}
-                value={maxLeads}
-                onChange={(e) => setMaxLeads(Number(e.target.value))}
-                className="field-input mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Minimum delay (s)</label>
-              <input
-                type="number"
-                step="0.5"
-                min={1}
-                value={delayMin}
-                onChange={(e) => setDelayMin(Number(e.target.value))}
-                className="field-input mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Maximum delay (s)</label>
-              <input
-                type="number"
-                step="0.5"
-                min={1}
-                value={delayMax}
-                onChange={(e) => setDelayMax(Number(e.target.value))}
-                className="field-input mt-1"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setRunOpen(false)}
-              className="rounded-xl border border-surface-border px-4 py-2 text-sm text-ink-muted transition hover:text-ink"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={!keyword.trim() || busySlug !== null}
-              onClick={() => void onRun()}
-              className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {busySlug ? 'Running' : 'Start Lead Search'}
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   )
 }

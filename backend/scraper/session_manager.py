@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import config as app_config
 
@@ -52,18 +52,47 @@ class SessionManager:
         except Exception:
             return None
 
-    def write_verification(self, platform_slug: str, ok: bool) -> None:
+    def write_verification(
+        self,
+        platform_slug: str,
+        ok: bool,
+        *,
+        connection_source: Literal["manual", "probe"] | None = None,
+    ) -> None:
+        """
+        Persist login verification.
+
+        ``connection_source`` distinguishes a real **Connect Platform** flow from a
+        background **probe** (verify-all). Only **manual** (or legacy files without
+        ``last_connected_via``) count as “connected” in the UI so public homepages
+        cannot mark every source as logged in.
+        """
         p = self._verification_path(platform_slug)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(
-            json.dumps({"verified": bool(ok), "checked_at": utc_now_iso()}),
-            encoding="utf-8",
-        )
+        prev = self.read_verification(platform_slug) or {}
+        prev_via = prev.get("last_connected_via")
+        if connection_source == "manual":
+            new_via: str | None = "manual"
+        elif connection_source == "probe":
+            new_via = "manual" if prev_via == "manual" else "probe"
+        else:
+            new_via = prev_via if isinstance(prev_via, str) else None
+        payload: dict[str, Any] = {"verified": bool(ok), "checked_at": utc_now_iso()}
+        if new_via is not None:
+            payload["last_connected_via"] = new_via
+        p.write_text(json.dumps(payload), encoding="utf-8")
 
     def session_connected(self, platform_slug: str) -> bool:
-        """True only after a successful verify (manual login end or refresh)."""
+        """True after **Connect Platform** (manual session) verified, not probe-only."""
+        if not self.has_session(platform_slug):
+            return False
         data = self.read_verification(platform_slug)
-        return bool(data and data.get("verified") is True)
+        if not data or data.get("verified") is not True:
+            return False
+        via = data.get("last_connected_via")
+        if via == "probe":
+            return False
+        return True
 
     def has_session(self, platform_slug: str) -> bool:
         """Profile directory on disk (may exist before login completes)."""
@@ -112,4 +141,4 @@ class SessionManager:
             raise ScraperError(f"Manual login flow failed: {e}", platform=slug) from e
         custom_url = platform_registry_service.get_custom_login_url(slug)
         ok = verify_playwright_session(slug, custom_login_url=custom_url)
-        self.write_verification(slug, ok)
+        self.write_verification(slug, ok, connection_source="manual")

@@ -1,6 +1,8 @@
 import { Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { fetchScraperStatus, fetchScraperJob, startScraperJob, type ScraperJobStatus, type ScraperStatus } from '@/lib/api/scraper'
 import { listPlatforms } from '@/lib/api/platforms'
 import { cn } from '@/lib/utils/cn'
@@ -56,6 +58,8 @@ function cell(row: Record<string, unknown>, ...keys: string[]): string {
 }
 
 export function SearchLeadsPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [platforms, setPlatforms] = useState<PlatformRow[]>([])
   const [scraper, setScraper] = useState<ScraperStatus | null>(null)
   const [loadingMeta, setLoadingMeta] = useState(true)
@@ -68,6 +72,7 @@ export function SearchLeadsPage() {
   const [leadLimit, setLeadLimit] = useState(20)
 
   const [headless, setHeadless] = useState(true)
+  const [profileContactEnrich, setProfileContactEnrich] = useState(false)
   const [delayMin, setDelayMin] = useState(3)
   const [delayMax, setDelayMax] = useState(5)
   const [maxScrollRounds, setMaxScrollRounds] = useState(12)
@@ -96,6 +101,15 @@ export function SearchLeadsPage() {
   useEffect(() => {
     void loadMeta()
   }, [loadMeta])
+
+  useEffect(() => {
+    const st = location.state as { platform?: string } | null
+    const slug = st?.platform?.trim()
+    if (!slug) return
+    if (!platforms.some((x) => x.slug === slug)) return
+    setPlatform(slug)
+    navigate(location.pathname, { replace: true, state: {} })
+  }, [location.pathname, location.state, platforms, navigate])
 
   useEffect(() => {
     const onCh = () => void loadMeta()
@@ -148,6 +162,7 @@ export function SearchLeadsPage() {
         company_size: companySize.trim(),
         lead_limit: leadLimit,
         headless,
+        profile_contact_enrich: profileContactEnrich,
         delay_min_seconds: delayMin,
         delay_max_seconds: delayMax,
         max_scroll_rounds: maxScrollRounds,
@@ -183,24 +198,28 @@ export function SearchLeadsPage() {
         <div className="space-y-5 rounded-2xl border border-surface-border bg-premium-card-light p-6 shadow-card dark:bg-premium-card-dark">
           <h2 className="type-panel-title mb-1">Search configuration</h2>
           <p className="mb-4 text-xs text-ink-muted">
-            Define prospecting inputs for this run. Results respect your lead limit and delay settings for safe
-            outreach automation.
+            Search uses your <span className="text-ink">keyword</span>, <span className="text-ink">location</span>,{' '}
+            <span className="text-ink">industry</span>, and <span className="text-ink">company size</span> together in
+            the people search (same as typing them into LinkedIn&apos;s search box). Result cards usually show name,
+            title, company, and profile URL only — email is rarely public unless you enable optional profile visits
+            below.
           </p>
 
           <div className="space-y-4 text-sm">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Lead source</label>
-              <select
+              <label htmlFor="search-lead-source" className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                Lead source
+              </label>
+              <FilterSelect
+                id="search-lead-source"
+                className="mt-1"
+                options={platforms.map((p) => ({ value: p.slug, label: p.label }))}
                 value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                className="field-input mt-1"
-              >
-                {platforms.map((p) => (
-                  <option key={p.slug} value={p.slug}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setPlatform}
+                placeholder="Choose lead source"
+                disabled={platforms.length === 0}
+                aria-label="Lead source"
+              />
             </div>
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Search keyword</label>
@@ -212,12 +231,14 @@ export function SearchLeadsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Country</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                Location / region
+              </label>
               <input
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 className="field-input mt-1"
-                placeholder="Example: United States"
+                placeholder="Example: United States, London, Maharashtra…"
               />
             </div>
             <div>
@@ -249,6 +270,21 @@ export function SearchLeadsPage() {
                 className="field-input mt-1"
               />
             </div>
+
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-surface-border bg-field/50 px-3 py-2.5 dark:bg-zinc-900/40">
+              <input
+                type="checkbox"
+                checked={profileContactEnrich}
+                onChange={(e) => setProfileContactEnrich(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-surface-border text-amber-700 accent-amber-600"
+              />
+              <span className="text-xs leading-snug text-ink-muted">
+                <span className="font-semibold text-ink">Fetch public email &amp; phone</span> (LinkedIn only): open
+                each collected profile and read visible <span className="font-mono text-[11px]">mailto:</span> /{' '}
+                <span className="font-mono text-[11px]">tel:</span> links. Slower; many profiles have no public email;
+                server caps how many profiles are opened per run.
+              </span>
+            </label>
 
             <details className="rounded-xl border border-surface-border bg-field/50 px-3 py-2 dark:bg-zinc-900/40">
               <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-ink-muted">

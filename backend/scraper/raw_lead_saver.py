@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 import config as app_config
 from database.orm.bootstrap import get_session_factory
 from database.orm.models import RawScrapeRecord
+from services import analytics_service, lead_orm_service
 from settings.lead_schema import utc_now_iso
 
 
@@ -55,6 +56,7 @@ class RawLeadSaver:
                     created_at=now,
                 )
                 db.add(rec)
+            lead_orm_service.ingest_scrape_rows_into_leads(db, platform=platform, rows=rows)
             if self._owns_session:
                 db.commit()
             else:
@@ -63,6 +65,11 @@ class RawLeadSaver:
             if self._owns_session:
                 db.rollback()
             raise
+        else:
+            try:
+                analytics_service.invalidate_analytics_cache()
+            except Exception:
+                pass
         finally:
             if self._owns_session:
                 db.close()

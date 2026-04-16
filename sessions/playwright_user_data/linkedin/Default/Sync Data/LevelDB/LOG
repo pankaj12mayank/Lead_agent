@@ -1,2 +1,3 @@
-2026/04/15-18:31:46.276 6274 Creating DB D:\Py_Projects\LeadPilot\sessions\playwright_user_data\linkedin\Default\Sync Data\LevelDB since it was missing.
-2026/04/15-18:31:46.312 6274 Reusing MANIFEST D:\Py_Projects\LeadPilot\sessions\playwright_user_data\linkedin\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/04/16-22:06:32.374 5290 Reusing MANIFEST D:\Py_Projects\LeadPilot\sessions\playwright_user_data\linkedin\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/04/16-22:06:32.376 5290 Recovering log #3
+2026/04/16-22:06:32.376 5290 Reusing old log D:\Py_Projects\LeadPilot\sessions\playwright_user_data\linkedin\Default\Sync Data\LevelDB/000003.log 

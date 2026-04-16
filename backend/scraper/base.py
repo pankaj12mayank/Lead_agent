@@ -62,6 +62,16 @@ class BaseScraper(ABC):
         """Parse visible results into raw dicts. Override per platform."""
         return []
 
+    def scroll_results_container(self, page: Page) -> None:
+        """Scroll the primary results list (override when the site scrolls an inner panel)."""
+        page.evaluate(
+            "window.scrollBy(0, Math.min(1200, Math.max(200, document.body.scrollHeight / 5)))"
+        )
+
+    def enrich_collected_profiles(self, page: Page, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Optional second pass (e.g. open profiles for public contact links). Override per platform."""
+        return rows
+
     def run(self) -> ScraperRunResult:
         run_id = RawLeadSaver.new_run_id()
         errors: List[str] = []
@@ -148,10 +158,9 @@ class BaseScraper(ABC):
                                 break
                         if len(collected) >= int(self.cfg.max_leads or 20):
                             break
-                        page.evaluate(
-                            "window.scrollBy(0, Math.min(1200, Math.max(200, document.body.scrollHeight / 5)))"
-                        )
+                        self.scroll_results_container(page)
                         self.delay.short_jitter()
+                    collected = self.enrich_collected_profiles(page, collected)
                 finally:
                     try:
                         ctx.close()

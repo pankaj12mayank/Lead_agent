@@ -20,6 +20,8 @@ class ScraperRunConfig:
     delay_max_seconds: Optional[float] = None
     headless: bool = True
     max_scroll_rounds: int = 12
+    # LinkedIn: open profiles to read public mailto/tel when user opts in (see profile_contact_enrich).
+    profile_contact_enrich: bool = False
 
     def __post_init__(self) -> None:
         self.platform = self.platform.strip().lower().replace(" ", "_")

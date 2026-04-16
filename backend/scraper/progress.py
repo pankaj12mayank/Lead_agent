@@ -18,6 +18,8 @@ class JobState:
     leads_found: int = 0
     leads_target: int = 0
     duplicates_removed: int = 0
+    max_scroll_rounds: int = 12
+    delay_avg_seconds: float = 4.0
     started_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
     messages: List[str] = field(default_factory=list)
@@ -31,8 +33,21 @@ _lock = threading.Lock()
 _jobs: Dict[str, JobState] = {}
 
 
-def create_job(job_id: str, platform: str, leads_target: int) -> JobState:
-    st = JobState(job_id=job_id, platform=platform, leads_target=int(leads_target or 0))
+def create_job(
+    job_id: str,
+    platform: str,
+    leads_target: int,
+    *,
+    max_scroll_rounds: int = 12,
+    delay_avg_seconds: float = 4.0,
+) -> JobState:
+    st = JobState(
+        job_id=job_id,
+        platform=platform,
+        leads_target=int(leads_target or 0),
+        max_scroll_rounds=max(1, int(max_scroll_rounds or 12)),
+        delay_avg_seconds=max(0.5, float(delay_avg_seconds or 4.0)),
+    )
     with _lock:
         _jobs[job_id] = st
     return st
@@ -129,12 +144,27 @@ def fail_job(job_id: str, err: str) -> None:
 
 def eta_seconds(job_id: str) -> Optional[float]:
     st = get_job(job_id)
-    if not st or st.completed or st.leads_found <= 0:
+    if not st or st.completed:
         return None
-    elapsed = max(0.001, time.time() - st.started_at)
-    rate = st.leads_found / elapsed
-    remaining = max(0, st.leads_target - st.leads_found)
-    return round(remaining / max(rate, 0.01), 1)
+    if st.leads_found > 0:
+        elapsed = max(0.001, time.time() - st.started_at)
+        rate = st.leads_found / elapsed
+        remaining = max(0, st.leads_target - st.leads_found)
+        return round(remaining / max(rate, 0.01), 1)
+    # No leads yet: rough ETA from scroll progress + configured delays
+    if st.phase not in ("queued", "searching", "extracting_data", "saving_lead"):
+        return None
+    max_r = max(1, int(getattr(st, "max_scroll_rounds", 12) or 12))
+    d_avg = float(getattr(st, "delay_avg_seconds", 4.0) or 4.0)
+    page = int(st.page or 0)
+    rounds_left = max(0, max_r - page)
+    per_round = max(5.0, d_avg * 2.5)
+    seconds = rounds_left * per_round
+    if st.phase == "queued":
+        seconds += max(8.0, d_avg * 2)
+    if seconds <= 0:
+        return round(max(8.0, d_avg * 3), 1)
+    return round(max(10.0, seconds), 1)
 
 
 class JobProgressSink:
